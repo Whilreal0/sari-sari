@@ -23,6 +23,9 @@ class ProfileLoaded extends ProfileState {
   ProfileLoaded(this.profile);
   @override
   List<Object?> get props => [profile];
+
+  String get plan => profile['plan'] ?? 'free';
+  String? get subscriptionEnd => profile['subscription_end'];
 }
 class ProfileError extends ProfileState {
   final String message;

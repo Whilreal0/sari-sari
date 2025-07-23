@@ -11,6 +11,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:sari_sari/bloc/auth_bloc.dart' as auth_bloc;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'screens/profile_screen.dart';
+import 'screens/subscription_details_screen.dart';
+import 'package:sari_sari/bloc/profile_bloc.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,6 +78,10 @@ class MyApp extends StatelessWidget {
                 ),
               ),
               '/profile': (context) => const ProfileScreen(),
+              '/subscription-details': (context) => BlocProvider(
+                create: (_) => ProfileBloc()..add(LoadProfile()),
+                child: const SubscriptionDetailsScreen(),
+              ),
             },
             debugShowCheckedModeBanner: false,
           );
