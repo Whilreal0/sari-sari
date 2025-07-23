@@ -10,6 +10,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:sari_sari/bloc/auth_bloc.dart' as auth_bloc;
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'screens/profile_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -74,6 +75,7 @@ class MyApp extends StatelessWidget {
                   child: const RegisterScreen(),
                 ),
               ),
+              '/profile': (context) => const ProfileScreen(),
             },
             debugShowCheckedModeBanner: false,
           );

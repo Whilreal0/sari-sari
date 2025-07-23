@@ -16,26 +16,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return SafeArea(
       child: Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.settings, size: 80, color: Colors.deepPurple),
-              const SizedBox(height: 16),
-              const Text(
-                'Settings',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
-                label: Text(isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'),
+        appBar: AppBar(
+          title: const Text('Settings'),
+        ),
+        body: Column(
+          children: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.person),
+                label: const Text('Profile'),
                 onPressed: () {
-                  context.read<ThemeController>().add(ToggleThemeEvent());
+                  Navigator.pushNamed(context, '/profile');
                 },
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  textStyle: const TextStyle(fontSize: 16),
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  elevation: 0,
+                ),
               ),
-            ],
-          ),
+            ),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.workspace_premium),
+                label: const Text('Upgrade Subscription'),
+                onPressed: () {
+                  // TODO: Navigate to subscription page or show dialog
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.amber,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  textStyle: const TextStyle(fontSize: 16),
+                  shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                  elevation: 0,
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
+              label: Text(isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'),
+              onPressed: () {
+                context.read<ThemeController>().add(ToggleThemeEvent());
+              },
+            ),
+          ],
         ),
       ),
     );
