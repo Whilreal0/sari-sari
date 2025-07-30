@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../theme/theme_controller.dart';
-import '../bloc/auth_bloc.dart' as auth_bloc;
+import '../services/user_service.dart';
+
 import '../components/subscription_button.dart';
 import '../components/manager_button.dart';
 import '../bloc/profile_bloc.dart';
-import '../repository/invite_repository.dart'; // Add this import
+import '../repository/invite_repository.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -15,6 +16,27 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  String userType = 'user';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserType();
+  }
+
+  Future<void> _loadUserType() async {
+    try {
+      final type = await UserService.getUserType();
+      if (mounted) {
+        setState(() {
+          userType = type;
+        });
+      }
+    } catch (e) {
+      print('Error loading user type: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -22,9 +44,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: BlocProvider(
         create: (_) => ProfileBloc(inviteRepository: InviteRepository())..add(LoadProfile()),
         child: Scaffold(
-          appBar: AppBar(
-            title: const Text('Settings'),
-          ),
           body: Column(
             children: [
               SizedBox(
@@ -43,24 +62,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.store),
-                  label: const Text('Store'),
-                  onPressed: () {
-                    Navigator.pushNamed(context, '/store');
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    textStyle: const TextStyle(fontSize: 16),
-                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-                    elevation: 0,
+              // Only show Store button for admin users
+              if (userType == 'admin')
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.store),
+                    label: const Text('Store'),
+                    onPressed: () {
+                      Navigator.pushNamed(context, '/store');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      textStyle: const TextStyle(fontSize: 16),
+                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                      elevation: 0,
+                    ),
                   ),
                 ),
-              ),
-              ManagerButton(),
-              const SubscriptionButton(),
+              // Only show Managers button for admin users
+              if (userType == 'admin') ManagerButton(),
+              // Only show Subscription button for admin users
+              if (userType == 'admin') const SubscriptionButton(),
               const SizedBox(height: 32),
               ElevatedButton.icon(
                 icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),

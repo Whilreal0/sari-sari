@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/profile_bloc.dart';
 import '../repository/invite_repository.dart';
+import '../services/user_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -12,6 +13,26 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool isEditing = false;
+  String userType = 'user';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserType();
+  }
+
+  Future<void> _loadUserType() async {
+    try {
+      final type = await UserService.getUserType();
+      if (mounted) {
+        setState(() {
+          userType = type;
+        });
+      }
+    } catch (e) {
+      print('Error loading user type: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +53,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               } else if (state is ProfileLoaded) {
                 final profile = state.profile;
                 final avatarUrl = profile['avatar_url'] ?? '';
-                final role = profile['role'] ?? 'User';
+                final role = userType == 'manager' ? 'Manager' : (profile['role'] ?? 'User');
                 final fullName = profile['full_name'] ?? '';
                 final number = profile['number'] ?? '';
                 final email = profile['email'] ?? '';

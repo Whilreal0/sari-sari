@@ -7,33 +7,41 @@ class StoreInfo extends StatelessWidget {
   final String plan;
   final String storeId;
   final String adminId;
-  const StoreInfo({Key? key, required this.storeNumber, required this.plan, required this.storeId, required this.adminId}) : super(key: key);
+  final String? createdAt; // Add this parameter
+  
+  const StoreInfo({
+    Key? key, 
+    required this.storeNumber, 
+    required this.plan, 
+    required this.storeId, 
+    required this.adminId,
+    this.createdAt, // Add this parameter
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final String storeName = 'Store $storeNumber';
-    final String dateCreated = '2024-07-25';
+    final String dateCreated = createdAt != null 
+        ? DateTime.parse(createdAt!).toLocal().toString().split(' ')[0]
+        : DateTime.now().toString().split(' ')[0];
     final String dailySales = '₱${(storeNumber * 1000).toStringAsFixed(2)}';
     final String weeklySales = '₱${(storeNumber * 5000).toStringAsFixed(2)}';
     final String monthlySales = '₱${(storeNumber * 20000).toStringAsFixed(2)}';
-    int currentManagers = storeNumber == 1 ? 1 : storeNumber == 2 ? 0 : 2;
+    
     int maxManagers = 0;
     String? upgradeText;
     if (plan == 'free') {
       maxManagers = 0;
-      currentManagers = 0;
       upgradeText = 'Upgrade';
     } else if (plan == 'pro') {
       maxManagers = 1;
-      currentManagers = 0;
       upgradeText = 'Upgrade';
     } else if (plan == 'premium') {
       maxManagers = 2;
-      currentManagers = 2;
       upgradeText = null;
     }
     bool blurWeekly = plan == 'free';
-    bool blurMonthly = plan == 'free' || plan == 'pro';
+    bool blurMonthly = plan != 'premium'; // Only show clearly for premium
     bool showManager = plan != 'free';
 
     return Container(
@@ -81,31 +89,49 @@ class StoreInfo extends StatelessWidget {
               Icon(Icons.calendar_view_week, size: 16, color: Colors.orange[700]),
               const SizedBox(width: 6),
               Text('Weekly Sales: ', style: Theme.of(context).textTheme.bodyMedium),
-              Stack(
-                children: [
-                  Text(weeklySales, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black.withOpacity(blurWeekly ? 0.3 : 1))),
-                  if (blurWeekly)
-                    Positioned.fill(
-                      child: Container(
-                        color: Colors.white.withOpacity(0.5),
-                        child: Center(
-                          child: Text(
-                            weeklySales,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.black.withOpacity(0.15),
-                              fontWeight: FontWeight.bold,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 4,
+              Flexible(
+                child: blurWeekly
+                    ? GestureDetector(
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Upgrade Required'),
+                              content: const Text('Subscribe to Pro or Premium to view weekly sales.'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('OK'),
                                 ),
                               ],
                             ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.lock, size: 10, color: Colors.grey[600]),
+                              const SizedBox(width: 2),
+                              Text(
+                                'Upgrade',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ),
-                ],
+                      )
+                    : Text(weeklySales, style: Theme.of(context).textTheme.bodyMedium),
               ),
             ],
           ),
@@ -115,55 +141,122 @@ class StoreInfo extends StatelessWidget {
               Icon(Icons.calendar_month, size: 16, color: Colors.purple[700]),
               const SizedBox(width: 6),
               Text('Monthly Sales: ', style: Theme.of(context).textTheme.bodyMedium),
-              Stack(
-                children: [
-                  Text(monthlySales, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.black.withOpacity(blurMonthly ? 0.3 : 1))),
-                  if (blurMonthly)
-                    Positioned.fill(
-                      child: Container(
-                        color: Colors.white.withOpacity(0.5),
-                        child: Center(
-                          child: Text(
-                            monthlySales,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.black.withOpacity(0.15),
-                              fontWeight: FontWeight.bold,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 4,
+              Flexible(
+                child: blurMonthly
+                    ? GestureDetector(
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Upgrade Required'),
+                              content: const Text('Subscribe to Premium to view monthly sales.'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('OK'),
                                 ),
                               ],
                             ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.lock, size: 10, color: Colors.grey[600]),
+                              const SizedBox(width: 2),
+                              Text(
+                                'Upgrade',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ),
-                ],
+                      )
+                    : Text(monthlySales, style: Theme.of(context).textTheme.bodyMedium),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(Icons.group, size: 16, color: Colors.blue[700]),
-              const SizedBox(width: 6),
-              Text('Managers: ', style: Theme.of(context).textTheme.bodyMedium),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text('$currentManagers/$maxManagers', style: TextStyle(color: Colors.blue[900], fontWeight: FontWeight.bold)),
-              ),
-              if (upgradeText != null) ...[
-                const SizedBox(width: 10),
-                Icon(Icons.upgrade, color: Colors.amber, size: 18),
-                const SizedBox(width: 4),
-                Text(upgradeText, style: TextStyle(color: Colors.amber[800], fontWeight: FontWeight.w500, fontSize: 12)),
-              ],
-            ],
+          FutureBuilder<List<Map<String, dynamic>>>(
+            future: StoreRepository().getManagersForStore(storeId),
+            builder: (context, snapshot) {
+              int currentManagers = 0;
+              if (snapshot.hasData) {
+                // Count only active managers
+                currentManagers = snapshot.data!
+                    .where((manager) => manager['display_status'] == 'Active')
+                    .length;
+              }
+              
+              return Row(
+                children: [
+                  Icon(Icons.group, size: 16, color: Colors.blue[700]),
+                  const SizedBox(width: 6),
+                  Text('Managers: ', style: Theme.of(context).textTheme.bodyMedium),
+                  if (plan == 'free')
+                    GestureDetector(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Upgrade Required'),
+                            content: const Text('Subscribe to Pro or Premium to add managers.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('OK'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.lock, size: 10, color: Colors.grey[600]),
+                            const SizedBox(width: 2),
+                            Text(
+                              'Upgrade',
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text('$currentManagers/$maxManagers', style: TextStyle(color: Colors.blue[900], fontWeight: FontWeight.bold)),
+                    ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 8),
           Row(
@@ -188,12 +281,39 @@ class StoreInfo extends StatelessWidget {
                       textStyle: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     onPressed: () async {
+                      // Check current manager count before generating code
+                      final managers = await StoreRepository().getManagersForStore(storeId);
+                      final currentManagers = managers
+                          .where((manager) => manager['display_status'] == 'Active')
+                          .length;
+                      
+                      if (!context.mounted) return;
+                      
+                      if (currentManagers >= maxManagers) {
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Manager Limit Reached'),
+                            content: Text('You have reached the maximum number of managers ($maxManagers) for your $plan plan.'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('OK'),
+                              ),
+                            ],
+                          ),
+                        );
+                        return;
+                      }
+                      
                       try {
                         final inviteRepo = InviteRepository();
                         final inviteCode = await inviteRepo.createManagerInviteCode(
                           storeId: storeId,
                           adminId: adminId,
                         );
+                        
+                        if (!context.mounted) return;
                         
                         showDialog(
                           context: context,
@@ -238,6 +358,8 @@ class StoreInfo extends StatelessWidget {
                           ),
                         );
                       } catch (e) {
+                        if (!context.mounted) return;
+                        
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Failed to generate code: $e')),
                         );
@@ -299,59 +421,6 @@ class StoreInfo extends StatelessWidget {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (inviteCodes.isNotEmpty) ...[
-                          const Text('Invite Codes:', style: TextStyle(fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          ...inviteCodes.map((invite) => Container(
-                            margin: const EdgeInsets.only(bottom: 8),
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: invite['status'] == 'pending' ? Colors.orange[50] : Colors.green[50],
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: invite['status'] == 'pending' ? Colors.orange[200]! : Colors.green[200]!,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  invite['status'] == 'pending' ? Icons.schedule : Icons.check_circle,
-                                  size: 16,
-                                  color: invite['status'] == 'pending' ? Colors.orange[700] : Colors.green[700],
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  invite['code'],
-                                  style: TextStyle(
-                                    fontFamily: 'monospace',
-                                    fontWeight: FontWeight.bold,
-                                    color: invite['status'] == 'pending' ? Colors.orange[800] : Colors.green[800],
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(' - '),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: invite['status'] == 'pending' ? Colors.orange[100] : Colors.green[100],
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    invite['status'] == 'pending' 
-                                        ? 'pending' 
-                                        : 'used by ${invite['used_by_name'] ?? 'Manager'}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: invite['status'] == 'pending' ? Colors.orange[800] : Colors.green[800],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )),
-                          const SizedBox(height: 16),
-                        ],
                         if (managers.isNotEmpty) ...[
                           const Text('Managers:', style: TextStyle(fontWeight: FontWeight.bold)),
                           const SizedBox(height: 8),
@@ -372,21 +441,43 @@ class StoreInfo extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    (m['display_status'] ?? '') == 'Active' 
-                                        ? 'Active' 
-                                        : 'Pending',
+                                    m['display_status'] ?? 'Not Active',
                                     style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
                                       color: (m['display_status'] ?? '') == 'Active' 
-                                          ? Colors.green[900] 
-                                          : Colors.orange[900],
-                                      fontWeight: FontWeight.bold, 
-                                      fontSize: 12
+                                          ? Colors.green[700] 
+                                          : Colors.orange[700],
                                     ),
                                   ),
                                 ),
                               ],
                             ),
                           )),
+                        ],
+                        if (inviteCodes.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          const Text('Pending Invites:', style: TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          ...inviteCodes.where((invite) => invite['status'] == 'pending').map((invite) => 
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4.0),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.schedule, size: 16, color: Colors.orange[700]),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Code: ${invite['code']}',
+                                    style: TextStyle(
+                                      fontFamily: 'monospace',
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.orange[800],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ],
                       ],
                     );

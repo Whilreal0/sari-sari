@@ -20,25 +20,25 @@ class UserService {
     try {
       String userType = 'user';
       
-      // Check if user is in profiles table (admin/regular user)
-      final profileResponse = await _supabase
-          .from('profiles')
+      // Check if user is in manager_profiles table first
+      final managerResponse = await _supabase
+          .from('manager_profiles')
           .select('id')
           .eq('id', user.id)
           .maybeSingle();
       
-      if (profileResponse != null) {
-        userType = 'admin';
+      if (managerResponse != null) {
+        userType = 'manager';
       } else {
-        // Check if user is in manager_profiles table
-        final managerResponse = await _supabase
-            .from('manager_profiles')
+        // Check if user is in profiles table (admin/regular user)
+        final profileResponse = await _supabase
+            .from('profiles')
             .select('id')
             .eq('id', user.id)
             .maybeSingle();
         
-        if (managerResponse != null) {
-          userType = 'manager';
+        if (profileResponse != null) {
+          userType = 'admin';
         }
       }
       
@@ -74,4 +74,7 @@ class UserService {
     }
   }
 }
+
+
+
 

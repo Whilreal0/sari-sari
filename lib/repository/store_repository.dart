@@ -6,9 +6,9 @@ class StoreRepository {
   Future<List<Map<String, dynamic>>> getStoresByOwner(String ownerId) async {
     final response = await _client
         .from('stores')
-        .select('id, name, created_at') // Select all columns
+        .select('id, name, created_at')
         .eq('owner_id', ownerId)
-        .order('created_at', ascending: false); // Sort by created_at in descending order
+        .order('created_at', ascending: true); // Changed to ascending order
     if (response is List) {
       return List<Map<String, dynamic>>.from(response);
     } else {
@@ -53,10 +53,17 @@ class StoreRepository {
             final userResponse = await _client.auth.admin.getUserById(manager['id']);
             final isEmailConfirmed = userResponse.user?.emailConfirmedAt != null;
             manager['email_confirmed'] = isEmailConfirmed;
-            manager['display_status'] = isEmailConfirmed ? 'Active' : 'Not Active';
+            
+            // Use database status if it's 'active', otherwise check email confirmation
+            if (manager['status'] == 'active') {
+              manager['display_status'] = 'Active';
+            } else {
+              manager['display_status'] = isEmailConfirmed ? 'Active' : 'Not Active';
+            }
           } catch (e) {
             manager['email_confirmed'] = false;
-            manager['display_status'] = 'Not Active';
+            // Use database status as fallback
+            manager['display_status'] = manager['status'] == 'active' ? 'Active' : 'Not Active';
           }
         }
         

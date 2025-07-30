@@ -15,7 +15,7 @@ import 'screens/subscription_details_screen.dart';
 import 'package:sari_sari/bloc/profile_bloc.dart';
 import 'repository/invite_repository.dart';
 import 'screens/store_screen.dart';
-
+import 'package:flutter/services.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,6 +42,26 @@ void main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  Future<bool> _onWillPop(BuildContext context) async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Exit App'),
+        content: const Text('Are you sure you want to exit?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Exit'),
+          ),
+        ],
+      ),
+    ) ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
@@ -53,7 +73,18 @@ class MyApp extends StatelessWidget {
             theme: lightTheme,
             darkTheme: darkTheme,
             themeMode: state.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            home: const SplashScreen(),
+            home: PopScope(
+              canPop: false,
+              onPopInvokedWithResult: (didPop, _) async {
+                if (didPop) return;
+                
+                final shouldPop = await _onWillPop(context);
+                if (shouldPop && context.mounted) {
+                  SystemNavigator.pop();
+                }
+              },
+              child: const SplashScreen(),
+            ),
             routes: {
               '/home': (context) => const HomeScreen(),
               '/login': (context) => BlocProvider(

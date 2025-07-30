@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
+import '../services/user_service.dart';
 
 class InviteRepository {
   final supabase = Supabase.instance.client;
@@ -213,7 +214,6 @@ class InviteRepository {
       'code': inviteCode,
       'store_id': storeId,
       'created_by': adminId,
-      'status': 'pending',
       'expires_at': DateTime.now().add(const Duration(days: 7)).toIso8601String(),
       'created_at': DateTime.now().toIso8601String(),
     });
@@ -227,7 +227,6 @@ class InviteRepository {
         .from('manager_invite_codes')
         .select('*, stores(name)')
         .eq('code', code)
-        .eq('status', 'pending')
         .gt('expires_at', DateTime.now().toIso8601String())
         .maybeSingle();
     
@@ -238,7 +237,9 @@ class InviteRepository {
   Future<void> useInviteCode(String code) async {
     await supabase
         .from('manager_invite_codes')
-        .update({'status': 'used', 'used_at': DateTime.now().toIso8601String()})
+        .update({
+          'used_at': DateTime.now().toIso8601String()
+        })
         .eq('code', code);
   }
 
@@ -265,7 +266,7 @@ class InviteRepository {
       throw Exception('Failed to create user account');
     }
     
-    // Create manager profile
+    // Create manager profile only (remove profiles table insertion)
     await supabase.from('manager_profiles').insert({
       'id': authResponse.user!.id,
       'email': email,
@@ -279,6 +280,9 @@ class InviteRepository {
     
     // Mark invite code as used
     await useInviteCode(inviteCode);
+    
+    // Clear any cached user type to ensure fresh lookup
+    await UserService.clearUserTypeCache();
   }
 
   // Get invite codes for a store with usage status

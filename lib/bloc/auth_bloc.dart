@@ -51,28 +51,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           email: event.email,
           password: event.password,
         );
+        
         if (response.user != null) {
+          // Clear user type cache on login to ensure fresh lookup
+          await UserService.clearUserTypeCache();
           emit(AuthSuccess());
         } else {
           emit(AuthFailure('Login failed'));
         }
-      } on SocketException {
-        emit(AuthFailure('No internet connection. Please check your network.'));
       } catch (e) {
-        String errorMsg = 'Login failed';
-        if (e is AuthApiException) {
-          final lowerMsg = e.message.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
-          if (lowerMsg.contains('invalidlogincredentials')) {
-            errorMsg = 'Incorrect email or password.'; // Your custom message
-          } else if (lowerMsg.contains('emailnotconfirmed') || lowerMsg.contains('emailnotconfirmed')) {
-            errorMsg = 'Please verify your email to log in.';
-          } else {
-            errorMsg = e.message;
-          }
-        } else if (e is Exception) {
-          errorMsg = e.toString();
-        }
-        emit(AuthFailure(errorMsg));
+        emit(AuthFailure('Login failed: ${e.toString()}'));
       }
     });
 

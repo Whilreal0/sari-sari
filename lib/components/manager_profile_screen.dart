@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../repository/invite_repository.dart';
+import '../bloc/profile_bloc.dart';
+import '../repository/store_repository.dart';
 
 class ManagerProfileScreen extends StatefulWidget {
-  final String name;
-  final String avatar;
-  final String startDate;
-  final String email;
-  final String storeId;
-  final String currentAdminId;
+  final String? name;
+  final String? avatar;
+  final String? startDate;
+  final String? email;
+  final String? storeId;
+  final String? currentAdminId;
 
   const ManagerProfileScreen({
     Key? key,
-    required this.name,
-    required this.avatar,
-    required this.startDate,
-    required this.email,
-    required this.storeId,
-    required this.currentAdminId,
+    this.name,
+    this.avatar,
+    this.startDate,
+    this.email,
+    this.storeId,
+    this.currentAdminId,
   }) : super(key: key);
 
   @override
@@ -24,57 +27,316 @@ class ManagerProfileScreen extends StatefulWidget {
 }
 
 class _ManagerProfileScreenState extends State<ManagerProfileScreen> {
-  String? currentCode;
-  bool isLoadingCode = false;
+  List<Map<String, dynamic>> stores = [];
+  Map<String, List<Map<String, dynamic>>> storeManagers = {};
+  bool isLoading = true;
+  String currentAdminId = '';
 
-  Future<void> _generateNewCode() async {
-    setState(() => isLoadingCode = true);
-    
-    try {
-      final inviteRepo = InviteRepository();
-      final newCode = await inviteRepo.regenerateManagerCode(
-        widget.email,
-        widget.storeId,
-        widget.currentAdminId,
-      );
-      
-      setState(() => currentCode = newCode);
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('New code generated successfully')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to generate code: $e')),
-      );
-    } finally {
-      setState(() => isLoadingCode = false);
+  @override
+  void initState() {
+    super.initState();
+    if (widget.name != null) {
+      // Show individual manager profile
+      _showIndividualProfile = true;
+    } else {
+      // Show stores and managers list
+      _showIndividualProfile = false;
+      _loadStoresAndManagers();
     }
   }
 
-  Future<void> _viewCurrentCode() async {
-    setState(() => isLoadingCode = true);
+  bool _showIndividualProfile = false;
+
+  Future<void> _loadStoresAndManagers() async {
+    setState(() => isLoading = true);
     
     try {
-      final inviteRepo = InviteRepository();
-      final code = await inviteRepo.getCurrentManagerCode(
-        widget.email,
-        widget.storeId,
-        widget.currentAdminId,
-      );
+      final profileState = context.read<ProfileBloc>().state;
       
-      setState(() => currentCode = code);
+      
+      if (profileState is ProfileLoaded) {
+        currentAdminId = profileState.profile['id'];
+        
+        
+        final storeRepo = StoreRepository();
+        final userStores = await storeRepo.getStoresByOwner(currentAdminId);
+        
+        
+        Map<String, List<Map<String, dynamic>>> managersMap = {};
+        
+        for (var store in userStores) {
+          final managers = await storeRepo.getManagersForStore(store['id']);
+          
+          managersMap[store['id']] = managers;
+        }
+        
+        setState(() {
+          stores = userStores;
+          storeManagers = managersMap;
+          isLoading = false;
+        });
+      } else {
+        
+        setState(() => isLoading = false);
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to get code: $e')),
-      );
-    } finally {
-      setState(() => isLoadingCode = false);
+      
+      setState(() => isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_showIndividualProfile) {
+      return _buildIndividualManagerProfile();
+    } else {
+      return _buildManagersList();
+    }
+  }
+
+  Widget _buildManagersList() {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Managers'),
+        elevation: 0,
+      ),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : stores.isEmpty
+              ? const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.store_outlined, size: 64, color: Colors.grey),
+                      SizedBox(height: 16),
+                      Text('No stores found', style: TextStyle(fontSize: 18, color: Colors.grey)),
+                    ],
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(20),
+                  itemCount: stores.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 32),
+                  itemBuilder: (context, index) {
+                    final store = stores[index];
+                    final managers = storeManagers[store['id']] ?? [];
+                    
+                    return Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.store,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                store['name'] ?? 'Store ${index + 1}',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          if (managers.isEmpty)
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.person_off_outlined, color: Colors.grey[600], size: 18),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'No managers assigned',
+                                    style: TextStyle(color: Colors.grey[600]),
+                                  ),
+                                ],
+                              ),
+                            )
+                          else
+                            ...managers.map((manager) => Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: manager['display_status'] == 'Active' 
+                                    ? Colors.green.withOpacity(0.1)
+                                    : Colors.orange.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 16,
+                                    backgroundColor: manager['display_status'] == 'Active' 
+                                        ? Colors.green.withOpacity(0.2)
+                                        : Colors.orange.withOpacity(0.2),
+                                    child: Icon(
+                                      Icons.person,
+                                      size: 16,
+                                      color: manager['display_status'] == 'Active' 
+                                          ? Colors.green[700]
+                                          : Colors.orange[700],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      manager['full_name'] ?? manager['email'] ?? 'Unknown',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: manager['display_status'] == 'Active' 
+                                          ? Colors.green
+                                          : Colors.orange,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      manager['display_status'] ?? 'Pending',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+    );
+  }
+
+  Widget _buildManagerTile(Map<String, dynamic> manager, String storeId) {
+    final isActive = manager['display_status'] == 'Active';
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: isActive ? Colors.green[100] : Colors.orange[100],
+          child: Icon(
+            Icons.person,
+            color: isActive ? Colors.green[700] : Colors.orange[700],
+          ),
+        ),
+        title: Text(manager['full_name'] ?? manager['email'] ?? ''),
+        subtitle: Text(manager['email'] ?? ''),
+        trailing: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: isActive ? Colors.green[50] : Colors.orange[50],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            manager['display_status'] ?? 'Pending',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: isActive ? Colors.green[700] : Colors.orange[700],
+            ),
+          ),
+        ),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ManagerProfileScreen(
+                name: manager['full_name'] ?? '',
+                avatar: manager['avatar_url'] ?? '',
+                startDate: manager['created_at'] ?? '',
+                email: manager['email'] ?? '',
+                storeId: storeId,
+                currentAdminId: currentAdminId,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildIndividualManagerProfile() {
+    String? currentCode;
+    bool isLoadingCode = false;
+
+    Future<void> _generateNewCode() async {
+      setState(() => isLoadingCode = true);
+      
+      try {
+        final inviteRepo = InviteRepository();
+        final newCode = await inviteRepo.regenerateManagerCode(
+          widget.email!,
+          widget.storeId!,
+          widget.currentAdminId!,
+        );
+        
+        setState(() => currentCode = newCode);
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('New code generated successfully')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to generate code: $e')),
+        );
+      } finally {
+        setState(() => isLoadingCode = false);
+      }
+    }
+
+    Future<void> _viewCurrentCode() async {
+      setState(() => isLoadingCode = true);
+      
+      try {
+        final inviteRepo = InviteRepository();
+        final code = await inviteRepo.getCurrentManagerCode(
+          widget.email!,
+          widget.storeId!,
+          widget.currentAdminId!,
+        );
+        
+        setState(() => currentCode = code);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to get code: $e')),
+        );
+      } finally {
+        setState(() => isLoadingCode = false);
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Manager Profile')),
       body: Column(
@@ -84,14 +346,14 @@ class _ManagerProfileScreenState extends State<ManagerProfileScreen> {
             child: CircleAvatar(
               radius: 32,
               backgroundColor: Colors.deepPurple.shade100,
-              backgroundImage: widget.avatar.isNotEmpty ? NetworkImage(widget.avatar) : null,
-              child: widget.avatar.isEmpty ? const Icon(Icons.person, size: 32, color: Colors.deepPurple) : null,
+              backgroundImage: widget.avatar!.isNotEmpty ? NetworkImage(widget.avatar!) : null,
+              child: widget.avatar!.isEmpty ? const Icon(Icons.person, size: 32, color: Colors.deepPurple) : null,
             ),
           ),
           const SizedBox(height: 16),
-          _ProfileRow(icon: Icons.person, label: 'Full Name', value: widget.name, compact: true),
-          _ProfileRow(icon: Icons.email, label: 'Email', value: widget.email, compact: true),
-          _ProfileRow(icon: Icons.calendar_today, label: 'Joined', value: widget.startDate, compact: true),
+          _ProfileRow(icon: Icons.person, label: 'Full Name', value: widget.name!, compact: true),
+          _ProfileRow(icon: Icons.email, label: 'Email', value: widget.email!, compact: true),
+          _ProfileRow(icon: Icons.calendar_today, label: 'Joined', value: widget.startDate!, compact: true),
           const SizedBox(height: 16),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -182,7 +444,7 @@ class _ManagerProfileScreenState extends State<ManagerProfileScreen> {
                       context: context,
                       builder: (context) => AlertDialog(
                         title: const Text('Remove Manager'),
-                        content: Text('Are you sure you want to remove ${widget.name}?'),
+                        content: Text('Are you sure you want to remove ${widget.name!}?'),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context),
@@ -251,6 +513,14 @@ class _ProfileRow extends StatelessWidget {
     );
   }
 } 
+
+
+
+
+
+
+
+
 
 
 

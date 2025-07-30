@@ -76,16 +76,15 @@ class _StoreScreenState extends State<StoreScreen> {
                                 ),
                               );
                               if (result != null && result.isNotEmpty) {
-                                final newStoreIndex = stores.length; // Calculate the new index
                                 context.read<StoreBloc>().add(AddStore(result, userId));
-                                // Set the index after we know what it will be
-                                Future.delayed(Duration.zero, () {
-                                  if (mounted) {
-                                    setState(() {
-                                      selectedStoreIndex = newStoreIndex;
-                                    });
-                                  }
-                                });
+                                // Wait for the bloc to update before setting the index
+                                await Future.delayed(const Duration(milliseconds: 100));
+                                if (mounted) {
+                                  setState(() {
+                                    // Set to the last index (newly added store will be at the end)
+                                    selectedStoreIndex = stores.length; // This will be the new store's index
+                                  });
+                                }
                               }
                             }
                           : null,
@@ -210,12 +209,14 @@ class _StoreScreenState extends State<StoreScreen> {
                                     Expanded(
                                       child: SingleChildScrollView(
                                         padding: const EdgeInsets.only(bottom: 24),
-                                        child: StoreInfo(
-                                          storeNumber: selectedStoreIndex + 1,
-                                          plan: plan,
-                                          storeId: stores[selectedStoreIndex]['id'],
-                                          adminId: userId,
-                                        ),
+                                        child: selectedStoreIndex < stores.length
+                                            ? StoreInfo(
+                                                storeNumber: selectedStoreIndex + 1,
+                                                plan: plan,
+                                                storeId: stores[selectedStoreIndex]['id'],
+                                                adminId: userId,
+                                              )
+                                            : const Center(child: CircularProgressIndicator()),
                                       ),
                                     ),
                                   ],

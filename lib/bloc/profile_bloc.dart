@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../repository/invite_repository.dart';
+import '../services/user_service.dart';
 
 // EVENTS
 abstract class ProfileEvent extends Equatable {
@@ -62,14 +63,31 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           emit(ProfileError('Not logged in'));
           return;
         }
-        final data = await Supabase.instance.client
-            .from('profiles')
-            .select()
-            .eq('id', user.id)
-            .single();
+        
+        // Get user type to determine which table to query
+        final userType = await UserService.getUserType();
+        
+        Map<String, dynamic> data;
+        if (userType == 'manager') {
+          // Fetch from manager_profiles table
+          data = await Supabase.instance.client
+              .from('manager_profiles')
+              .select()
+              .eq('id', user.id)
+              .single();
+        } else {
+          // Fetch from profiles table (admin/regular user)
+          data = await Supabase.instance.client
+              .from('profiles')
+              .select()
+              .eq('id', user.id)
+              .single();
+        }
+        
         emit(ProfileLoaded(data));
       } catch (e) {
-        emit(ProfileError('Failed to load profile'));
+        print('Profile load error: $e');
+        emit(ProfileError('Failed to load profile: ${e.toString()}'));
       }
     });
     on<InviteManagerRequested>((event, emit) async {
