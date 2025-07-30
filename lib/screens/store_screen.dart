@@ -4,6 +4,7 @@ import '../bloc/profile_bloc.dart';
 import '../bloc/store_bloc.dart';
 import '../repository/store_repository.dart';
 import '../components/store/store_info.dart';
+import '../components/upgrade_dialog.dart';
 
 class StoreScreen extends StatefulWidget {
   const StoreScreen({super.key});
@@ -144,18 +145,15 @@ class _StoreScreenState extends State<StoreScreen> {
                                                     // Only allow renaming first store if premium, or any other store
                                                     if (i == 0 && plan != 'premium') {
                                                       if (mounted) {
-                                                        showDialog(
-                                                          context: context,
-                                                          builder: (context) => AlertDialog(
-                                                            title: const Text('Premium Required'),
-                                                            content: const Text('Upgrade to Premium to rename the default store.'),
-                                                            actions: [
-                                                              TextButton(
-                                                                onPressed: () => Navigator.pop(context),
-                                                                child: const Text('OK'),
-                                                              ),
-                                                            ],
-                                                          ),
+                                                        UpgradeDialog.show(
+                                                          context,
+                                                          title: 'Premium Feature',
+                                                          message: 'Rename your default store and unlock more customization options.',
+                                                          requiredPlan: 'Premium',
+                                                          onUpgrade: () {
+                                                            Navigator.pop(context);
+                                                            // TODO: Navigate to subscription page
+                                                          },
                                                         );
                                                       }
                                                       return;

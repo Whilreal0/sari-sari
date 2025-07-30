@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../repository/invite_repository.dart';
 import '../../repository/store_repository.dart';
+import '../upgrade_dialog.dart';
 
 class StoreInfo extends StatelessWidget {
   final int storeNumber;
@@ -10,13 +11,13 @@ class StoreInfo extends StatelessWidget {
   final String? createdAt; // Add this parameter
   
   const StoreInfo({
-    Key? key, 
+    super.key, 
     required this.storeNumber, 
     required this.plan, 
     required this.storeId, 
     required this.adminId,
-    this.createdAt, // Add this parameter
-  }) : super(key: key);
+    this.createdAt,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -29,16 +30,12 @@ class StoreInfo extends StatelessWidget {
     final String monthlySales = '₱${(storeNumber * 20000).toStringAsFixed(2)}';
     
     int maxManagers = 0;
-    String? upgradeText;
     if (plan == 'free') {
       maxManagers = 0;
-      upgradeText = 'Upgrade';
     } else if (plan == 'pro') {
       maxManagers = 1;
-      upgradeText = 'Upgrade';
     } else if (plan == 'premium') {
       maxManagers = 2;
-      upgradeText = null;
     }
     bool blurWeekly = plan == 'free';
     bool blurMonthly = plan != 'premium'; // Only show clearly for premium
@@ -49,7 +46,7 @@ class StoreInfo extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       padding: const EdgeInsets.all(20.0),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha : 0.08),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: Theme.of(context).colorScheme.primary,
@@ -93,26 +90,23 @@ class StoreInfo extends StatelessWidget {
                 child: blurWeekly
                     ? GestureDetector(
                         onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Upgrade Required'),
-                              content: const Text('Subscribe to Pro or Premium to view weekly sales.'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('OK'),
-                                ),
-                              ],
-                            ),
+                          UpgradeDialog.show(
+                            context,
+                            title: 'Unlock Weekly Analytics',
+                            message: 'Get detailed weekly sales insights to track your business performance.',
+                            requiredPlan: 'Pro',
+                            onUpgrade: () {
+                              Navigator.pop(context);
+                              // TODO: Navigate to subscription page
+                            },
                           );
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.3),
+                            color: Colors.grey.withValues(alpha: 0.3),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                            border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -145,26 +139,23 @@ class StoreInfo extends StatelessWidget {
                 child: blurMonthly
                     ? GestureDetector(
                         onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              title: const Text('Upgrade Required'),
-                              content: const Text('Subscribe to Premium to view monthly sales.'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('OK'),
-                                ),
-                              ],
-                            ),
+                          UpgradeDialog.show(
+                            context,
+                            title: 'Premium Analytics',
+                            message: 'Access comprehensive monthly sales reports and advanced analytics.',
+                            requiredPlan: 'Premium',
+                            onUpgrade: () {
+                              Navigator.pop(context);
+                              // TODO: Navigate to subscription page
+                            },
                           );
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.grey.withOpacity(0.3),
+                            color: Colors.grey.withValues(alpha: 0.3),
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                            border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -207,26 +198,23 @@ class StoreInfo extends StatelessWidget {
                   if (plan == 'free')
                     GestureDetector(
                       onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Upgrade Required'),
-                            content: const Text('Subscribe to Pro or Premium to add managers.'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('OK'),
-                              ),
-                            ],
-                          ),
+                        UpgradeDialog.show(
+                          context,
+                          title: 'Team Management',
+                          message: 'Add managers to your stores and collaborate with your team.',
+                          requiredPlan: 'Pro',
+                          onUpgrade: () {
+                            Navigator.pop(context);
+                            // TODO: Navigate to subscription page
+                          },
                         );
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.grey.withOpacity(0.3),
+                          color: Colors.grey.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.withOpacity(0.2)),
+                          border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
