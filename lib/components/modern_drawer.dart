@@ -45,7 +45,6 @@ class _ModernDrawerState extends State<ModernDrawer> {
     try {
       // Get user type first
       final type = await UserService.getUserType();
-      print('User type detected: $type'); // Debug print
       
       // Get full name based on user type
       String? name;
@@ -56,7 +55,6 @@ class _ModernDrawerState extends State<ModernDrawer> {
             .eq('id', user.id)
             .maybeSingle();
         name = response?['full_name'] as String?;
-        print('Admin name from profiles: $name'); // Debug print
       } else if (type == 'manager') {
         final response = await Supabase.instance.client
             .from('manager_profiles')
@@ -64,8 +62,6 @@ class _ModernDrawerState extends State<ModernDrawer> {
             .eq('id', user.id)
             .maybeSingle();
         name = response?['full_name'] as String?;
-        print('Manager name from manager_profiles: $name'); // Debug print
-        print('Manager response: $response'); // Debug print
       }
       
       setState(() {
@@ -74,7 +70,6 @@ class _ModernDrawerState extends State<ModernDrawer> {
         loading = false;
       });
     } catch (e) {
-      print('Error in fetchFullNameAndUserType: $e'); // Debug print
       setState(() {
         fullName = null;
         userType = 'user';
@@ -338,6 +333,7 @@ class _ModernDrawerState extends State<ModernDrawer> {
     );
   }
 }
+
 
 
 

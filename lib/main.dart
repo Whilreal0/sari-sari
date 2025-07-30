@@ -9,16 +9,20 @@ import 'screens/register_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:sari_sari/bloc/auth_bloc.dart' as auth_bloc;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb ;
 import 'screens/profile_screen.dart';
 import 'screens/subscription_details_screen.dart';
 import 'package:sari_sari/bloc/profile_bloc.dart';
 import 'repository/invite_repository.dart';
 import 'screens/store_screen.dart';
-import 'screens/manager_registration_screen.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Disable all debug prints
+  debugPrint = (String? message, {int? wrapWidth}) {};
+  
   if (!kIsWeb) {
     await dotenv.load();
   }
