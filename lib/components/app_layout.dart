@@ -23,7 +23,13 @@ class AppLayout extends StatelessWidget {
         actions: actions,
       ),
       drawer: drawer,
-      body: body,
+      body: SafeArea(
+        top: false,
+        left: false,
+        right: false,
+        bottom: true,
+        child: body,
+      ),
     );
   }
 } 

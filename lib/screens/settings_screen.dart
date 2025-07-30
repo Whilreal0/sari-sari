@@ -3,8 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../theme/theme_controller.dart';
 import '../bloc/auth_bloc.dart' as auth_bloc;
 import '../components/subscription_button.dart';
-import '../components/invite_manager_button.dart';
+import '../components/manager_button.dart';
 import '../bloc/profile_bloc.dart';
+import '../repository/invite_repository.dart'; // Add this import
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -19,7 +20,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return SafeArea(
       child: BlocProvider(
-        create: (_) => ProfileBloc()..add(LoadProfile()),
+        create: (_) => ProfileBloc(inviteRepository: InviteRepository())..add(LoadProfile()),
         child: Scaffold(
           appBar: AppBar(
             title: const Text('Settings'),
@@ -42,7 +43,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ),
-              const InviteManagerButton(),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.store),
+                  label: const Text('Store'),
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/store');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    textStyle: const TextStyle(fontSize: 16),
+                    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+              ManagerButton(),
               const SubscriptionButton(),
               const SizedBox(height: 32),
               ElevatedButton.icon(

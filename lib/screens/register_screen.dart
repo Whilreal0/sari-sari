@@ -3,6 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:equatable/equatable.dart';
 import 'package:sari_sari/bloc/auth_bloc.dart' as auth_bloc;
+import '../components/user_type_toggle.dart';
+import '../repository/invite_repository.dart';
+import 'manager_registration_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -14,6 +17,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  String selectedType = 'admin';
 
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -83,104 +87,199 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
                     const SizedBox(height: 32),
-                    TextField(
-                      controller: fullNameController,
-                      decoration: InputDecoration(
-                        labelText: 'Full Name',
-                        prefixIcon: Icon(Icons.person_outline),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: emailController,
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.email_outlined),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: passwordController,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: Icon(Icons.lock_outline),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        suffixIcon: IconButton(
-                          icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                        ),
-                      ),
-                      obscureText: _obscurePassword,
-                      onChanged: (value) {
-                        if (value.endsWith(' ')) {
-                          passwordController.text = value.trimRight();
-                          passwordController.selection = TextSelection.fromPosition(
-                            TextPosition(offset: passwordController.text.length),
-                          );
-                        }
+                    // UserTypeToggle
+                    UserTypeToggle(
+                      selectedType: selectedType,
+                      onChanged: (type) {
+                        FocusScope.of(context).unfocus();
+                        setState(() {
+                          selectedType = type;
+                          emailController.clear();
+                          passwordController.clear();
+                          confirmPasswordController.clear();
+                          fullNameController.clear();
+                        });
                       },
                     ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: confirmPasswordController,
-                      decoration: InputDecoration(
-                        labelText: 'Confirm Password',
-                        prefixIcon: Icon(Icons.lock_outline),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        suffixIcon: IconButton(
-                          icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility),
-                          onPressed: () {
-                            setState(() {
-                              _obscureConfirmPassword = !_obscureConfirmPassword;
-                            });
-                          },
-                        ),
-                      ),
-                      obscureText: _obscureConfirmPassword,
-                    ),
                     const SizedBox(height: 24),
-                    SizedBox(
-                      height: 48,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          final email = emailController.text.trim();
-                          final password = passwordController.text.trim();
-                          final confirmPassword = confirmPasswordController.text.trim();
-                          final fullName = fullNameController.text.trim();
+                    
+                    if (selectedType == 'admin') ...[
+                      // Admin registration fields
+                      TextFormField(
+                        controller: fullNameController,
+                        decoration: InputDecoration(
+                          labelText: 'Full Name',
+                          prefixIcon: const Icon(Icons.person),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter your full name';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      TextFormField(
+                        controller: emailController,
+                        decoration: InputDecoration(
+                          labelText: 'Email',
+                          prefixIcon: const Icon(Icons.email),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Please enter your email';
+                          }
+                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                            return 'Please enter a valid email';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      TextFormField(
+                        controller: passwordController,
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          prefixIcon: const Icon(Icons.lock),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          suffixIcon: IconButton(
+                            icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                          ),
+                        ),
+                        obscureText: _obscurePassword,
+                        validator: (value) {
+                          if (value == null || value.length < 6) {
+                            return 'Password must be at least 6 characters';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      TextFormField(
+                        controller: confirmPasswordController,
+                        decoration: InputDecoration(
+                          labelText: 'Confirm Password',
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          suffixIcon: IconButton(
+                            icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility),
+                            onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                          ),
+                        ),
+                        obscureText: _obscureConfirmPassword,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please confirm your password';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      SizedBox(
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            final email = emailController.text.trim();
+                            final password = passwordController.text.trim();
+                            final confirmPassword = confirmPasswordController.text.trim();
+                            final fullName = fullNameController.text.trim();
 
-                          if (password != confirmPassword) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Passwords do not match.'),
-                                backgroundColor: Colors.red,
+                            if (password != confirmPassword) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Passwords do not match.'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                              return;
+                            }
+
+                            context.read<auth_bloc.AuthBloc>().add(
+                              auth_bloc.RegisterRequested(
+                                email,
+                                password,
+                                fullName,
                               ),
                             );
-                            return;
-                          }
-
-                          context.read<auth_bloc.AuthBloc>().add(
-                            auth_bloc.RegisterRequested(
-                              email,
-                              password,
-                              fullName,
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          backgroundColor: Colors.deepPurple,
-                          foregroundColor: Colors.white,
+                          },
+                          style: ElevatedButton.styleFrom(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            backgroundColor: Colors.deepPurple,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Register', style: TextStyle(fontSize: 16, color: Colors.white)),
                         ),
-                        child: const Text('Register', style: TextStyle(fontSize: 16, color: Colors.white)),
                       ),
-                    ),
+                    ] else if (selectedType == 'manager') ...[
+                      // Manager registration - invite code only
+                      TextField(
+                        controller: emailController,
+                        decoration: InputDecoration(
+                          labelText: 'Invite Code',
+                          prefixIcon: const Icon(Icons.vpn_key_outlined),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          helperText: 'Enter the 6-digit code from your admin',
+                        ),
+                        keyboardType: TextInputType.number,
+                        maxLength: 6,
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            final code = emailController.text.trim();
+                            if (code.length != 6) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Please enter a valid 6-digit code')),
+                              );
+                              return;
+                            }
+
+                            try {
+                              final inviteRepo = InviteRepository();
+                              final storeData = await inviteRepo.verifyInviteCode(code);
+                              
+                              if (storeData != null) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ManagerRegistrationScreen(
+                                      inviteCode: code,
+                                      storeData: storeData,
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Invalid or expired invite code')),
+                                );
+                              }
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error: $e')),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            backgroundColor: Colors.deepPurple,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Verify Code', style: TextStyle(fontSize: 16, color: Colors.white)),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,

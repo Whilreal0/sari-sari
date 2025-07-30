@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/auth_bloc.dart' as auth_bloc;
+import '../services/user_service.dart';
 
 class ModernDrawer extends StatefulWidget {
   final int selectedIndex;
@@ -21,32 +22,65 @@ class ModernDrawer extends StatefulWidget {
 
 class _ModernDrawerState extends State<ModernDrawer> {
   String? fullName;
+  String? userType;
   bool loading = true;
 
   @override
   void initState() {
     super.initState();
-    fetchFullName();
+    fetchFullNameAndUserType();
   }
 
-  Future<void> fetchFullName() async {
+  Future<void> fetchFullNameAndUserType() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
       setState(() {
         fullName = null;
+        userType = 'guest';
         loading = false;
       });
       return;
     }
-    final response = await Supabase.instance.client
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single();
-    setState(() {
-      fullName = response['full_name'] as String?;
-      loading = false;
-    });
+    
+    try {
+      // Get user type first
+      final type = await UserService.getUserType();
+      print('User type detected: $type'); // Debug print
+      
+      // Get full name based on user type
+      String? name;
+      if (type == 'admin') {
+        final response = await Supabase.instance.client
+            .from('profiles')
+            .select('full_name')
+            .eq('id', user.id)
+            .maybeSingle();
+        name = response?['full_name'] as String?;
+        print('Admin name from profiles: $name'); // Debug print
+      } else if (type == 'manager') {
+        final response = await Supabase.instance.client
+            .from('manager_profiles')
+            .select('full_name')
+            .eq('id', user.id)
+            .maybeSingle();
+        name = response?['full_name'] as String?;
+        print('Manager name from manager_profiles: $name'); // Debug print
+        print('Manager response: $response'); // Debug print
+      }
+      
+      setState(() {
+        fullName = name;
+        userType = type;
+        loading = false;
+      });
+    } catch (e) {
+      print('Error in fetchFullNameAndUserType: $e'); // Debug print
+      setState(() {
+        fullName = null;
+        userType = 'user';
+        loading = false;
+      });
+    }
   }
 
   @override
@@ -123,7 +157,7 @@ class _ModernDrawerState extends State<ModernDrawer> {
 
   Widget _buildDrawerHeader(BuildContext context) {
     return Container(
-      height: 180,
+      height: 200, // Increased height to prevent overflow
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -168,14 +202,28 @@ class _ModernDrawerState extends State<ModernDrawer> {
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     ),
                   )
-                : Text(
-                    fullName ?? 'Guest',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        fullName ?? 'Guest',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        userType == 'admin' ? 'Admin' : userType == 'manager' ? 'Manager' : 'User',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
                   ),
+            const SizedBox(height: 4), // Add spacing
             const Text(
               'Your neighborhood store',
               style: TextStyle(
@@ -190,11 +238,18 @@ class _ModernDrawerState extends State<ModernDrawer> {
   }
 
   Widget _buildDrawerItems(BuildContext context) {
-    final items = [
+    List<Map<String, dynamic>> items = [
       {'icon': Icons.home_outlined, 'title': 'Home', 'index': 0},
       {'icon': Icons.inventory_2_outlined, 'title': 'Items', 'index': 1},
-      {'icon': Icons.settings_outlined, 'title': 'Settings', 'index': 2},
     ];
+    
+    // Only show Store for admin users
+    if (userType == 'admin') {
+      items.add({'icon': Icons.store_outlined, 'title': 'Store', 'index': 2});
+      items.add({'icon': Icons.settings_outlined, 'title': 'Settings', 'index': 3});
+    } else {
+      items.add({'icon': Icons.settings_outlined, 'title': 'Settings', 'index': 2});
+    }
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -283,3 +338,9 @@ class _ModernDrawerState extends State<ModernDrawer> {
     );
   }
 }
+
+
+
+
+
+

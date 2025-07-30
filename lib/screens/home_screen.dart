@@ -5,6 +5,12 @@ import 'settings_screen.dart';
 import 'package:intl/intl.dart';
 import '../components/app_layout.dart';
 import '../components/dashboard_pro_style.dart';
+import '../services/user_service.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'store_screen.dart';
+import '../bloc/profile_bloc.dart';
+import '../repository/invite_repository.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,56 +19,101 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   int _selectedIndex = 0;
-  int _salesTabIndex = 2; // 0: Daily, 1: Weekly, 2: Monthly
   late AnimationController _drawerAnimationController;
+  String userType = 'admin'; // Default to admin
 
-  final List<String> _titles = const [
-    'Home',
-    'Items',
-    'Settings',
-  ];
+  final List<String> _adminTitles = const ['Home', 'Items', 'Store', 'Settings'];
+  final List<String> _managerTitles = const ['Home', 'Inventory', 'Settings'];
 
   @override
   void initState() {
     super.initState();
     _drawerAnimationController = AnimationController(
-      vsync: this,
       duration: const Duration(milliseconds: 300),
+      vsync: this,
     );
+    _loadUserType();
   }
 
-  @override
-  void dispose() {
-    _drawerAnimationController.dispose();
-    super.dispose();
+  Future<void> _loadUserType() async {
+    try {
+      final type = await UserService.getUserType();
+      if (mounted) {
+        setState(() {
+          userType = type;
+        });
+      }
+    } catch (e) {
+      print('Error loading user type: $e');
+    }
   }
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
-    Navigator.of(context).pop(); // Close the drawer
+    Navigator.of(context).pop();
+  }
+
+  Widget _buildManagerInventoryScreen() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.inventory_2, size: 64, color: Colors.grey),
+          SizedBox(height: 16),
+          Text(
+            'Manager Inventory',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 8),
+          Text(
+            'View and manage store inventory',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> _screens = [
-      const DashboardProStyle(),
-      const ItemsScreen(),
-      const SettingsScreen(),
+    final List<Widget> _adminScreens = [
+      const DashboardProStyle(),      // index 0 - Home
+      const ItemsScreen(),            // index 1 - Items  
+      BlocProvider(                   // index 2 - Store
+        create: (_) => ProfileBloc(inviteRepository: InviteRepository())..add(LoadProfile()),
+        child: const StoreScreen(),
+      ),
+      const SettingsScreen(),         // index 3 - Settings
     ];
+
+    final List<Widget> _managerScreens = [
+      const DashboardProStyle(),      // index 0 - Home
+      _buildManagerInventoryScreen(), // index 1 - Inventory
+      const SettingsScreen(),         // index 2 - Settings
+    ];
+
+    final screens = userType == 'admin' ? _adminScreens : _managerScreens;
+    final titles = userType == 'admin' ? _adminTitles : _managerTitles;
+    
+    // Ensure selectedIndex doesn't exceed screen array bounds
+    final safeIndex = _selectedIndex >= screens.length ? 0 : _selectedIndex;
+
     return AppLayout(
-      title: _titles[_selectedIndex],
-      body: _screens[_selectedIndex],
+      title: titles[safeIndex],
+      body: screens[safeIndex],
       drawer: ModernDrawer(
-        selectedIndex: _selectedIndex,
+        selectedIndex: safeIndex,
         onItemTapped: _onItemTapped,
         drawerAnimationController: _drawerAnimationController,
       ),
     );
   }
-
- 
 }
+
+
+
+

@@ -13,6 +13,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'screens/profile_screen.dart';
 import 'screens/subscription_details_screen.dart';
 import 'package:sari_sari/bloc/profile_bloc.dart';
+import 'repository/invite_repository.dart';
+import 'screens/store_screen.dart';
+import 'screens/manager_registration_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -79,8 +82,12 @@ class MyApp extends StatelessWidget {
               ),
               '/profile': (context) => const ProfileScreen(),
               '/subscription-details': (context) => BlocProvider(
-                create: (_) => ProfileBloc()..add(LoadProfile()),
+                create: (_) => ProfileBloc(inviteRepository: InviteRepository())..add(LoadProfile()),
                 child: const SubscriptionDetailsScreen(),
+              ),
+              '/store': (context) => BlocProvider(
+                create: (_) => ProfileBloc(inviteRepository: InviteRepository())..add(LoadProfile()),
+                child: const StoreScreen(),
               ),
             },
             debugShowCheckedModeBanner: false,

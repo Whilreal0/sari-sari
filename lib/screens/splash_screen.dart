@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -21,8 +22,13 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     );
     _animation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
-    Timer(const Duration(seconds: 2), () {
-      Navigator.of(context).pushReplacementNamed('/login');
+    Timer(const Duration(seconds: 2), () async {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user != null) {
+        Navigator.of(context).pushReplacementNamed('/home');
+      } else {
+        Navigator.of(context).pushReplacementNamed('/login');
+      }
     });
   }
 

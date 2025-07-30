@@ -1,6 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'dart:io';
+import '../services/user_service.dart';
 
 // EVENTS
 abstract class AuthEvent extends Equatable {
@@ -54,6 +56,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         } else {
           emit(AuthFailure('Login failed'));
         }
+      } on SocketException {
+        emit(AuthFailure('No internet connection. Please check your network.'));
       } catch (e) {
         String errorMsg = 'Login failed';
         if (e is AuthApiException) {
@@ -99,6 +103,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthLoading());
       try {
         await Supabase.instance.client.auth.signOut();
+        // Clear user type cache on logout
+        await UserService.clearUserTypeCache();
         emit(AuthSuccess());
       } catch (e) {
         emit(AuthFailure('Logout failed: ${e.toString()}'));
