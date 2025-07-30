@@ -7,10 +7,10 @@ class UserTypeToggle extends StatelessWidget {
   final UserTypeChanged onChanged;
 
   const UserTypeToggle({
-    Key? key,
+    super.key,
     required this.selectedType,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

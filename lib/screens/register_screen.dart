@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:equatable/equatable.dart';
+
 import 'package:sari_sari/bloc/auth_bloc.dart' as auth_bloc;
 import '../components/user_type_toggle.dart';
 import '../repository/invite_repository.dart';
@@ -47,8 +46,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   backgroundColor: Colors.green,
                 ),
               );
-              // Optionally, navigate to login after a delay
+              // Add mounted check before using context after async gap
               Future.delayed(const Duration(seconds: 2), () {
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 Navigator.pushReplacementNamed(context, '/login');
               });

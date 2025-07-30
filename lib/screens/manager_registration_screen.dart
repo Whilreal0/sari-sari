@@ -6,10 +6,10 @@ class ManagerRegistrationScreen extends StatefulWidget {
   final Map<String, dynamic> storeData;
   
   const ManagerRegistrationScreen({
-    Key? key,
+    super.key,
     required this.inviteCode,
     required this.storeData,
-  }) : super(key: key);
+  });
 
   @override
   State<ManagerRegistrationScreen> createState() => _ManagerRegistrationScreenState();
@@ -46,6 +46,7 @@ class _ManagerRegistrationScreenState extends State<ManagerRegistrationScreen> {
         password: _passwordController.text,
       );
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Registration completed successfully! Please confirm the email sent to you before logging in.'),
@@ -61,11 +62,14 @@ class _ManagerRegistrationScreenState extends State<ManagerRegistrationScreen> {
         (route) => false, // Remove all previous routes
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Registration failed: $e')),
       );
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -218,4 +222,6 @@ class _ManagerRegistrationScreenState extends State<ManagerRegistrationScreen> {
     super.dispose();
   }
 }
+
+
 

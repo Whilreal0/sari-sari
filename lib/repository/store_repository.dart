@@ -8,12 +8,9 @@ class StoreRepository {
         .from('stores')
         .select('id, name, created_at')
         .eq('owner_id', ownerId)
-        .order('created_at', ascending: true); // Changed to ascending order
-    if (response is List) {
-      return List<Map<String, dynamic>>.from(response);
-    } else {
-      throw Exception('Failed to fetch stores');
-    }
+        .order('created_at', ascending: true);
+    
+    return List<Map<String, dynamic>>.from(response);
   }
 
   Future<void> addStore(String name, String ownerId) async {
@@ -44,36 +41,31 @@ class StoreRepository {
           .eq('store_id', storeId)
           .order('created_at', ascending: false);
       
-      if (response is List) {
-        List<Map<String, dynamic>> managers = List<Map<String, dynamic>>.from(response);
-        
-        // Check email confirmation status for each manager
-        for (var manager in managers) {
-          try {
-            final userResponse = await _client.auth.admin.getUserById(manager['id']);
-            final isEmailConfirmed = userResponse.user?.emailConfirmedAt != null;
-            manager['email_confirmed'] = isEmailConfirmed;
-            
-            // Use database status if it's 'active', otherwise check email confirmation
-            if (manager['status'] == 'active') {
-              manager['display_status'] = 'Active';
-            } else {
-              manager['display_status'] = isEmailConfirmed ? 'Active' : 'Not Active';
-            }
-          } catch (e) {
-            manager['email_confirmed'] = false;
-            // Use database status as fallback
-            manager['display_status'] = manager['status'] == 'active' ? 'Active' : 'Not Active';
+      List<Map<String, dynamic>> managers = List<Map<String, dynamic>>.from(response);
+      
+      // Check email confirmation status for each manager
+      for (var manager in managers) {
+        try {
+          final userResponse = await _client.auth.admin.getUserById(manager['id']);
+          final isEmailConfirmed = userResponse.user?.emailConfirmedAt != null;
+          manager['email_confirmed'] = isEmailConfirmed;
+          
+          // Use database status if it's 'active', otherwise check email confirmation
+          if (manager['status'] == 'active') {
+            manager['display_status'] = 'Active';
+          } else {
+            manager['display_status'] = isEmailConfirmed ? 'Active' : 'Not Active';
           }
+        } catch (e) {
+          manager['email_confirmed'] = false;
+          // Use database status as fallback
+          manager['display_status'] = manager['status'] == 'active' ? 'Active' : 'Not Active';
         }
-        
-        return managers;
-      } else {
-        return [];
       }
+      
+      return managers;
     } catch (e) {
-      print('Error fetching managers: $e');
-      return [];
+      throw Exception('Failed to get managers: $e');
     }
   }
 

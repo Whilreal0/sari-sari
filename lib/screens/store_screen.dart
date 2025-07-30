@@ -6,7 +6,7 @@ import '../repository/store_repository.dart';
 import '../components/store/store_info.dart';
 
 class StoreScreen extends StatefulWidget {
-  const StoreScreen({Key? key}) : super(key: key);
+  const StoreScreen({super.key});
 
   @override
   State<StoreScreen> createState() => _StoreScreenState();
@@ -31,7 +31,7 @@ class _StoreScreenState extends State<StoreScreen> {
           plan = profileState.plan;
           userId = profileState.profile['id'];
         }
-        if (userId == null || userId.isEmpty) {
+        if (userId.isEmpty) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
@@ -55,6 +55,7 @@ class _StoreScreenState extends State<StoreScreen> {
                       onPressed: stores.length < maxStores
                           ? () async {
                               final nameController = TextEditingController();
+                              final bloc = context.read<StoreBloc>(); // Capture bloc reference early
                               final result = await showDialog<String>(
                                 context: context,
                                 builder: (context) => AlertDialog(
@@ -76,7 +77,8 @@ class _StoreScreenState extends State<StoreScreen> {
                                 ),
                               );
                               if (result != null && result.isNotEmpty) {
-                                context.read<StoreBloc>().add(AddStore(result, userId));
+                                if (!mounted) return;
+                                bloc.add(AddStore(result, userId));
                                 // Wait for the bloc to update before setting the index
                                 await Future.delayed(const Duration(milliseconds: 100));
                                 if (mounted) {
@@ -111,6 +113,7 @@ class _StoreScreenState extends State<StoreScreen> {
                                                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
                                                 child: GestureDetector(
                                                   onLongPress: i == 0 ? null : () async { // Disable long press for first store
+                                                    final bloc = context.read<StoreBloc>(); // Capture bloc reference early
                                                     final confirm = await showDialog<bool>(
                                                       context: context,
                                                       builder: (context) => AlertDialog(
@@ -128,8 +131,8 @@ class _StoreScreenState extends State<StoreScreen> {
                                                         ],
                                                       ),
                                                     );
-                                                    if (confirm == true) {
-                                                      context.read<StoreBloc>().add(DeleteStore(stores[i]['id'], userId));
+                                                    if (confirm == true && mounted) {
+                                                      bloc.add(DeleteStore(stores[i]['id'], userId));
                                                       setState(() {
                                                         if (selectedStoreIndex >= stores.length - 1 && selectedStoreIndex > 0) {
                                                           selectedStoreIndex--;
@@ -140,22 +143,25 @@ class _StoreScreenState extends State<StoreScreen> {
                                                   onDoubleTap: () async {
                                                     // Only allow renaming first store if premium, or any other store
                                                     if (i == 0 && plan != 'premium') {
-                                                      showDialog(
-                                                        context: context,
-                                                        builder: (context) => AlertDialog(
-                                                          title: const Text('Premium Required'),
-                                                          content: const Text('Upgrade to Premium to rename the default store.'),
-                                                          actions: [
-                                                            TextButton(
-                                                              onPressed: () => Navigator.pop(context),
-                                                              child: const Text('OK'),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      );
+                                                      if (mounted) {
+                                                        showDialog(
+                                                          context: context,
+                                                          builder: (context) => AlertDialog(
+                                                            title: const Text('Premium Required'),
+                                                            content: const Text('Upgrade to Premium to rename the default store.'),
+                                                            actions: [
+                                                              TextButton(
+                                                                onPressed: () => Navigator.pop(context),
+                                                                child: const Text('OK'),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        );
+                                                      }
                                                       return;
                                                     }
                                                     
+                                                    final bloc = context.read<StoreBloc>(); // Capture bloc reference early
                                                     final nameController = TextEditingController(text: stores[i]['name']);
                                                     final result = await showDialog<String>(
                                                       context: context,
@@ -177,9 +183,9 @@ class _StoreScreenState extends State<StoreScreen> {
                                                         ],
                                                       ),
                                                     );
-                                                    if (result != null && result.isNotEmpty && result != stores[i]['name']) {
+                                                    if (result != null && result.isNotEmpty && result != stores[i]['name'] && mounted) {
                                                       // Add rename functionality to StoreBloc
-                                                      context.read<StoreBloc>().add(RenameStore(stores[i]['id'], result, userId));
+                                                      bloc.add(RenameStore(stores[i]['id'], result, userId));
                                                     }
                                                   },
                                                   child: ElevatedButton(
@@ -198,7 +204,7 @@ class _StoreScreenState extends State<StoreScreen> {
                                                       elevation: selectedStoreIndex == i ? 2 : 0,
                                                       padding: const EdgeInsets.symmetric(vertical: 18),
                                                     ),
-                                                    child: Text(stores[i]['name'] ?? 'Store  {i + 1}'),
+                                                    child: Text(stores[i]['name'] ?? 'Store ${i + 1}'),
                                                   ),
                                                 ),
                                               ),

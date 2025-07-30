@@ -87,7 +87,7 @@ class _ModernDrawerState extends State<ModernDrawer> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
               Theme.of(context).colorScheme.surface,
             ],
           ),
@@ -258,7 +258,7 @@ class _ModernDrawerState extends State<ModernDrawer> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             color: isSelected
-                ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
                 : Colors.transparent,
           ),
           child: ListTile(
@@ -305,7 +305,7 @@ class _ModernDrawerState extends State<ModernDrawer> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Divider(
-            color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
             height: 1,
           ),
           const SizedBox(height: 8),
@@ -315,14 +315,14 @@ class _ModernDrawerState extends State<ModernDrawer> {
               Icon(
                 Icons.info_outline,
                 size: 14,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               ),
               const SizedBox(width: 6),
               Text(
                 'Version 1.0.0',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -333,6 +333,10 @@ class _ModernDrawerState extends State<ModernDrawer> {
     );
   }
 }
+
+
+
+
 
 
 

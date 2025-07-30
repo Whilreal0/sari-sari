@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import '../components/modern_drawer.dart';
 import 'items_screen.dart';
 import 'settings_screen.dart';
-import 'package:intl/intl.dart';
 import '../components/app_layout.dart';
 import '../components/dashboard_pro_style.dart';
 import '../services/user_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'store_screen.dart';
 import '../bloc/profile_bloc.dart';
 import '../repository/invite_repository.dart';
@@ -46,7 +44,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      print('Error loading user type: $e');
+      // Error loading user type - handle silently or show user-friendly message
     }
   }
 
@@ -80,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> _adminScreens = [
+    final List<Widget> adminScreens = [
       const DashboardProStyle(),      // index 0 - Home
       const ItemsScreen(),            // index 1 - Items  
       BlocProvider(                   // index 2 - Store
@@ -90,13 +88,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       const SettingsScreen(),         // index 3 - Settings
     ];
 
-    final List<Widget> _managerScreens = [
+    final List<Widget> managerScreens = [
       const DashboardProStyle(),      // index 0 - Home
       _buildManagerInventoryScreen(), // index 1 - Inventory
       const SettingsScreen(),         // index 2 - Settings
     ];
 
-    final screens = userType == 'admin' ? _adminScreens : _managerScreens;
+    final screens = userType == 'admin' ? adminScreens : managerScreens;
     final titles = userType == 'admin' ? _adminTitles : _managerTitles;
     
     // Ensure selectedIndex doesn't exceed screen array bounds
@@ -113,6 +111,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
+
+
 
 
 

@@ -43,6 +43,7 @@ dependencies:
   qr_flutter: ^4.1.0
   uuid: ^4.0.0
   shared_preferences: ^2.2.2
+  equatable: ^2.0.7
 dev_dependencies:
   flutter_test:
     sdk: flutter

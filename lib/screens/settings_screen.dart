@@ -33,7 +33,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         });
       }
     } catch (e) {
-      print('Error loading user type: $e');
+      // Error loading user type - handle silently or use proper logging
     }
   }
 
@@ -99,3 +99,4 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 }
+

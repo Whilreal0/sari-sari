@@ -13,14 +13,14 @@ class ManagerProfileScreen extends StatefulWidget {
   final String? currentAdminId;
 
   const ManagerProfileScreen({
-    Key? key,
+    super.key,
     this.name,
     this.avatar,
     this.startDate,
     this.email,
     this.storeId,
     this.currentAdminId,
-  }) : super(key: key);
+  });
 
   @override
   State<ManagerProfileScreen> createState() => _ManagerProfileScreenState();
@@ -127,7 +127,7 @@ class _ManagerProfileScreenState extends State<ManagerProfileScreen> {
                         color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
                         ),
                       ),
                       child: Column(
@@ -138,7 +138,7 @@ class _ManagerProfileScreenState extends State<ManagerProfileScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Icon(
@@ -161,7 +161,7 @@ class _ManagerProfileScreenState extends State<ManagerProfileScreen> {
                             Container(
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: Colors.grey.withOpacity(0.1),
+                                color: Colors.grey.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
@@ -181,8 +181,8 @@ class _ManagerProfileScreenState extends State<ManagerProfileScreen> {
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: manager['display_status'] == 'Active' 
-                                    ? Colors.green.withOpacity(0.1)
-                                    : Colors.orange.withOpacity(0.1),
+                                    ? Colors.green.withValues(alpha: 0.1)
+                                    : Colors.orange.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(
@@ -190,8 +190,8 @@ class _ManagerProfileScreenState extends State<ManagerProfileScreen> {
                                   CircleAvatar(
                                     radius: 16,
                                     backgroundColor: manager['display_status'] == 'Active' 
-                                        ? Colors.green.withOpacity(0.2)
-                                        : Colors.orange.withOpacity(0.2),
+                                        ? Colors.green.withValues(alpha: 0.2)
+                                        : Colors.orange.withValues(alpha: 0.2),
                                     child: Icon(
                                       Icons.person,
                                       size: 16,
@@ -238,60 +238,11 @@ class _ManagerProfileScreenState extends State<ManagerProfileScreen> {
     );
   }
 
-  Widget _buildManagerTile(Map<String, dynamic> manager, String storeId) {
-    final isActive = manager['display_status'] == 'Active';
-    
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: isActive ? Colors.green[100] : Colors.orange[100],
-          child: Icon(
-            Icons.person,
-            color: isActive ? Colors.green[700] : Colors.orange[700],
-          ),
-        ),
-        title: Text(manager['full_name'] ?? manager['email'] ?? ''),
-        subtitle: Text(manager['email'] ?? ''),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: isActive ? Colors.green[50] : Colors.orange[50],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            manager['display_status'] ?? 'Pending',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: isActive ? Colors.green[700] : Colors.orange[700],
-            ),
-          ),
-        ),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => ManagerProfileScreen(
-                name: manager['full_name'] ?? '',
-                avatar: manager['avatar_url'] ?? '',
-                startDate: manager['created_at'] ?? '',
-                email: manager['email'] ?? '',
-                storeId: storeId,
-                currentAdminId: currentAdminId,
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
   Widget _buildIndividualManagerProfile() {
     String? currentCode;
     bool isLoadingCode = false;
 
-    Future<void> _generateNewCode() async {
+    Future<void> generateNewCode() async {
       setState(() => isLoadingCode = true);
       
       try {
@@ -304,19 +255,25 @@ class _ManagerProfileScreenState extends State<ManagerProfileScreen> {
         
         setState(() => currentCode = newCode);
         
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('New code generated successfully')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('New code generated successfully')),
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to generate code: $e')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to generate code: $e')),
+          );
+        }
       } finally {
-        setState(() => isLoadingCode = false);
+        if (mounted) {
+          setState(() => isLoadingCode = false);
+        }
       }
     }
 
-    Future<void> _viewCurrentCode() async {
+    Future<void> viewCurrentCode() async {
       setState(() => isLoadingCode = true);
       
       try {
@@ -329,11 +286,15 @@ class _ManagerProfileScreenState extends State<ManagerProfileScreen> {
         
         setState(() => currentCode = code);
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to get code: $e')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to get code: $e')),
+          );
+        }
       } finally {
-        setState(() => isLoadingCode = false);
+        if (mounted) {
+          setState(() => isLoadingCode = false);
+        }
       }
     }
 
@@ -367,7 +328,7 @@ class _ManagerProfileScreenState extends State<ManagerProfileScreen> {
                     TextButton.icon(
                       icon: const Icon(Icons.visibility, size: 16),
                       label: const Text('View Code'),
-                      onPressed: isLoadingCode ? null : _viewCurrentCode,
+                      onPressed: isLoadingCode ? null : viewCurrentCode,
                     ),
                   ],
                 ),
@@ -413,7 +374,7 @@ class _ManagerProfileScreenState extends State<ManagerProfileScreen> {
                   child: ElevatedButton.icon(
                     icon: const Icon(Icons.refresh),
                     label: const Text('Generate New Code'),
-                    onPressed: isLoadingCode ? null : _generateNewCode,
+                    onPressed: isLoadingCode ? null : generateNewCode,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange,
                       foregroundColor: Colors.white,
@@ -513,6 +474,21 @@ class _ProfileRow extends StatelessWidget {
     );
   }
 } 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

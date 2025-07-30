@@ -4,7 +4,7 @@ import '../bloc/profile_bloc.dart';
 import 'manager_profile_screen.dart';
 
 class ManagerButton extends StatelessWidget {
-  const ManagerButton({Key? key}) : super(key: key);
+  const ManagerButton({super.key});
 
   @override
   Widget build(BuildContext context) {

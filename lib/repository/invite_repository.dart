@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:uuid/uuid.dart';
 import '../services/user_service.dart';
 
 class InviteRepository {
@@ -123,8 +122,6 @@ class InviteRepository {
     required String storeId,
     required String invitedBy,
   }) async {
-    print('Simple invite - email: $email, storeId: $storeId, invitedBy: $invitedBy');
-    
     final token = _generateInviteToken();
     
     try {
@@ -134,17 +131,11 @@ class InviteRepository {
         'invited_by': invitedBy,
         'token': token,
       });
-      print('Simple insert successful');
+      
     } catch (e) {
-      print('Simple insert error: $e');
-      throw e;
+      rethrow;
     }
   }
-
-  // Optional: Send email using a service like EmailJS, SendGrid, etc.
-  // Future<void> _sendInviteEmail(String email, String storeId) async {
-  //   // Implement email sending logic here
-  // }
 
   // Generate new code for existing manager (only by the admin who invited them)
   Future<String> regenerateManagerCode(String managerEmail, String storeId, String currentAdminId) async {

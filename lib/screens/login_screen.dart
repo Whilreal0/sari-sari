@@ -34,6 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
           Future.delayed(const Duration(seconds: 2), () {
+            if (!context.mounted) return;
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
             Navigator.pushReplacementNamed(context, '/home');
           });
