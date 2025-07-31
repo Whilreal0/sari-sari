@@ -89,13 +89,6 @@ class _CodesScreenState extends State<CodesScreen> {
     return 0;
   }
 
-  bool _canGenerateCode() {
-    if (stores.isEmpty) return false;
-    final storeId = stores[selectedStoreIndex]['id'];
-    final currentCount = storeManagerCounts[storeId] ?? 0;
-    return currentCount < _getMaxManagers();
-  }
-
   Future<void> _loadCodesForStore(String storeId) async {
     try {
       // Load real data from Supabase
@@ -407,5 +400,6 @@ class _CodesScreenState extends State<CodesScreen> {
     return '${date.day}/${date.month}/${date.year.toString().substring(2)} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 }
+
 
 
