@@ -13,6 +13,7 @@
 migrate_working_dir/
 
 .env
+
 # IntelliJ related
 *.iml
 *.ipr
@@ -44,3 +45,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Android keystore files (additional protection)
+android/key.properties
+android/app/*.jks
+android/app/*.keystore
