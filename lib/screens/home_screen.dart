@@ -37,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _loadUserType() async {
     try {
+      // This will use cached value, no loading needed
       final type = await UserService.getUserType();
       if (mounted) {
         setState(() {
@@ -44,7 +45,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         });
       }
     } catch (e) {
-      // Error loading user type - handle silently or show user-friendly message
+      // Error loading user type - handle silently
     }
   }
 
@@ -111,6 +112,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 }
+
+
 
 
 

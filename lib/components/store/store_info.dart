@@ -256,131 +256,7 @@ class StoreInfo extends StatelessWidget {
           ),
           if (showManager) ...[
             const SizedBox(height: 18),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Managed by', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                if (plan == 'pro' || plan == 'premium')
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.person_add, size: 16),
-                    label: const Text('Generate Invite Code', style: TextStyle(fontSize: 12)),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      textStyle: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    onPressed: () async {
-                      // Check current manager count before generating code
-                      final managers = await StoreRepository().getManagersForStore(storeId);
-                      final currentManagers = managers
-                          .where((manager) => manager['display_status'] == 'Active')
-                          .length;
-                      
-                      if (!context.mounted) return;
-                      
-                      if (currentManagers >= maxManagers) {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Manager Limit Reached'),
-                            content: Text('You have reached the maximum number of managers ($maxManagers) for your $plan plan.'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('OK'),
-                              ),
-                            ],
-                          ),
-                        );
-                        return;
-                      }
-                      
-                      try {
-                        final inviteRepo = InviteRepository();
-                        final inviteCode = await inviteRepo.createManagerInviteCode(
-                          storeId: storeId,
-                          adminId: adminId,
-                        );
-                        
-                        if (!context.mounted) return;
-                        
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Manager Invite Code'),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.vpn_key, size: 48, color: Colors.deepPurple),
-                                const SizedBox(height: 16),
-                                Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey[100],
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.grey[300]!),
-                                  ),
-                                  child: Text(
-                                    inviteCode,
-                                    style: const TextStyle(
-                                      fontSize: 32,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: 'monospace',
-                                      letterSpacing: 4,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                const Text(
-                                  'Share this code with your manager. It expires in 7 days and can only be used once.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                                ),
-                              ],
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('OK'),
-                              ),
-                            ],
-                          ),
-                        );
-                      } catch (e) {
-                        if (!context.mounted) return;
-                        
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Failed to generate code: $e')),
-                        );
-                      }
-                    },
-                  )
-                else if (plan == 'free')
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.lock, size: 16),
-                    label: const Text('Add Manager', style: TextStyle(fontSize: 12)),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      textStyle: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    onPressed: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Upgrade Required'),
-                          content: const Text('Subscribe to Pro or Premium to add managers.'),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('OK'),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-              ],
-            ),
-            
+            Text('Managed by', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             FutureBuilder<List<Map<String, dynamic>>>(
               future: StoreRepository().getManagersForStore(storeId),
@@ -388,88 +264,82 @@ class StoreInfo extends StatelessWidget {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                if (snapshot.hasError) {
-                  return Text('Failed to load managers', style: TextStyle(color: Colors.red));
-                }
-                final managers = snapshot.data ?? [];
                 
-                return FutureBuilder<List<Map<String, dynamic>>>(
-                  future: InviteRepository().getInviteCodesForStore(storeId),
-                  builder: (context, inviteSnapshot) {
-                    if (inviteSnapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    
-                    final inviteCodes = inviteSnapshot.data ?? [];
-                    
-                    if (managers.isEmpty && inviteCodes.isEmpty) {
-                      return const Text('No managers invited yet.', style: TextStyle(color: Colors.grey));
-                    }
-                    
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
                       children: [
-                        if (managers.isNotEmpty) ...[
-                          const Text('Managers:', style: TextStyle(fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          ...managers.map((m) => Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2.0),
-                            child: Row(
-                              children: [
-                                Icon(Icons.person, size: 16, color: Colors.blue[700]),
-                                const SizedBox(width: 6),
-                                Text(m['full_name'] ?? m['email'] ?? '', style: Theme.of(context).textTheme.bodyMedium),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: (m['display_status'] ?? '') == 'Active' 
-                                        ? Colors.green[50] 
-                                        : Colors.orange[50],
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    m['display_status'] ?? 'Not Active',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      color: (m['display_status'] ?? '') == 'Active' 
-                                          ? Colors.green[700] 
-                                          : Colors.orange[700],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )),
-                        ],
-                        if (inviteCodes.isNotEmpty) ...[
-                          const SizedBox(height: 16),
-                          const Text('Pending Invites:', style: TextStyle(fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          ...inviteCodes.where((invite) => invite['status'] == 'pending').map((invite) => 
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4.0),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.schedule, size: 16, color: Colors.orange[700]),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Code: ${invite['code']}',
-                                    style: TextStyle(
-                                      fontFamily: 'monospace',
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.orange[800],
-                                    ),
-                                  ),
-                                ],
-                              ),
+                        Icon(Icons.person_off_outlined, color: Colors.grey[600], size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'No managers assigned',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                
+                return Column(
+                  children: snapshot.data!.map((manager) => Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: manager['display_status'] == 'Active' 
+                          ? Colors.green.withValues(alpha: 0.1)
+                          : Colors.orange.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: manager['display_status'] == 'Active' 
+                              ? Colors.green.withValues(alpha: 0.2)
+                              : Colors.orange.withValues(alpha: 0.2),
+                          child: Icon(
+                            Icons.person,
+                            size: 16,
+                            color: manager['display_status'] == 'Active' 
+                                ? Colors.green[700]
+                                : Colors.orange[700],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            manager['full_name'] ?? manager['email'] ?? 'Unknown',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 15,
                             ),
                           ),
-                        ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: manager['display_status'] == 'Active' 
+                                ? Colors.green
+                                : Colors.orange,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            manager['display_status'] ?? 'Pending',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       ],
-                    );
-                  },
+                    ),
+                  )).toList(),
                 );
               },
             ),

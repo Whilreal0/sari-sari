@@ -227,6 +227,53 @@ class _ManagerProfileScreenState extends State<ManagerProfileScreen> {
                                       ),
                                     ),
                                   ),
+                                  const SizedBox(width: 2),
+                                  Container(
+                                    margin: const EdgeInsets.only(right: 0),
+                                    child: PopupMenuButton<String>(
+                                      onSelected: (value) {
+                                        if (value == 'delete') {
+                                          // TODO: Implement delete functionality
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: const Text('Remove Manager'),
+                                              content: Text('Are you sure you want to remove ${manager['full_name'] ?? manager['email']}?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(context),
+                                                  child: const Text('Cancel'),
+                                                ),
+                                                TextButton(
+                                                  onPressed: () {
+                                                    Navigator.pop(context);
+                                                    // TODO: Add actual delete logic here
+                                                  },
+                                                  child: const Text('Remove', style: TextStyle(color: Colors.red)),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      itemBuilder: (context) => [
+                                        const PopupMenuItem<String>(
+                                          value: 'delete',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.delete_outline, color: Colors.red, size: 18),
+                                              SizedBox(width: 4),
+                                              Text('Delete', style: TextStyle(color: Colors.red)),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                      icon: const Icon(Icons.more_vert, size: 16, color: Colors.grey),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                                      splashRadius: 12,
+                                    ),
+                                  ),
                                 ],
                               ),
                             )),
@@ -474,6 +521,14 @@ class _ProfileRow extends StatelessWidget {
     );
   }
 } 
+
+
+
+
+
+
+
+
 
 
 

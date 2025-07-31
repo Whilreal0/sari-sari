@@ -13,11 +13,12 @@ class StoreRepository {
     return List<Map<String, dynamic>>.from(response);
   }
 
-  Future<void> addStore(String name, String ownerId) async {
+  Future<void> addStore(String name, String ownerId, {String plan = 'free'}) async {
     try {
       await _client.from('stores').insert({
         'name': name,
         'owner_id': ownerId,
+        'plan': plan,
         'created_at': DateTime.now().toIso8601String(),
       });
     } catch (e) {

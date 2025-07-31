@@ -43,26 +43,9 @@ class _ModernDrawerState extends State<ModernDrawer> {
     }
     
     try {
-      // Get user type first
+      // Get cached user type and full name
       final type = await UserService.getUserType();
-      
-      // Get full name based on user type
-      String? name;
-      if (type == 'admin') {
-        final response = await Supabase.instance.client
-            .from('profiles')
-            .select('full_name')
-            .eq('id', user.id)
-            .maybeSingle();
-        name = response?['full_name'] as String?;
-      } else if (type == 'manager') {
-        final response = await Supabase.instance.client
-            .from('manager_profiles')
-            .select('full_name')
-            .eq('id', user.id)
-            .maybeSingle();
-        name = response?['full_name'] as String?;
-      }
+      final name = await UserService.getFullName();
       
       setState(() {
         fullName = name;
@@ -333,6 +316,7 @@ class _ModernDrawerState extends State<ModernDrawer> {
     );
   }
 }
+
 
 
 

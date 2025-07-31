@@ -64,19 +64,24 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           return;
         }
         
-        // Get user type to determine which table to query
+        // Try to get cached subscription data first
+        final cachedData = await UserService.getSubscriptionData();
+        if (cachedData != null) {
+          emit(ProfileLoaded(cachedData));
+          return;
+        }
+        
+        // Fallback to direct database query if cache fails
         final userType = await UserService.getUserType();
         
         Map<String, dynamic> data;
         if (userType == 'manager') {
-          // Fetch from manager_profiles table
           data = await Supabase.instance.client
               .from('manager_profiles')
               .select()
               .eq('id', user.id)
               .single();
         } else {
-          // Fetch from profiles table (admin/regular user)
           data = await Supabase.instance.client
               .from('profiles')
               .select()

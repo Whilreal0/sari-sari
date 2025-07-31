@@ -62,15 +62,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                 ),
               ),
-              // Only show Store button for admin users
+              // Only show Managers button for admin users
+              if (userType == 'admin') ManagerButton(),
+              // Show subscription button for all users
+              SubscriptionButton(),
+              // Only show Codes button for admin users
               if (userType == 'admin')
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    icon: const Icon(Icons.store),
-                    label: const Text('Store'),
+                    icon: const Icon(Icons.qr_code),
+                    label: const Text('Codes'),
                     onPressed: () {
-                      Navigator.pushNamed(context, '/store');
+                      Navigator.pushNamed(context, '/codes');
                     },
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 18),
@@ -80,10 +84,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
-              // Only show Managers button for admin users
-              if (userType == 'admin') ManagerButton(),
-              // Only show Subscription button for admin users
-              if (userType == 'admin') const SubscriptionButton(),
               const SizedBox(height: 32),
               ElevatedButton.icon(
                 icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
@@ -99,4 +99,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 }
+
+
+
+
+
 

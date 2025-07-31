@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../repository/store_repository.dart';
+import '../services/user_service.dart';
 
 // Events
 abstract class StoreEvent {}
@@ -10,7 +11,8 @@ class FetchStores extends StoreEvent {
 class AddStore extends StoreEvent {
   final String name;
   final String ownerId;
-  AddStore(this.name, this.ownerId);
+  final String? plan;
+  AddStore(this.name, this.ownerId, {this.plan});
 }
 class DeleteStore extends StoreEvent {
   final String storeId;
@@ -45,9 +47,13 @@ class StoreBloc extends Bloc<StoreEvent, StoreState> {
       try {
         final stores = await storeRepository.getStoresByOwner(event.ownerId);
         
-        // If no stores exist, create a default store
+        // If no stores exist, create a default store with admin's plan
         if (stores.isEmpty) {
-          await storeRepository.addStore('Store 1', event.ownerId);
+          // Get admin's subscription data to determine plan
+          final subscriptionData = await UserService.getSubscriptionData();
+          final adminPlan = subscriptionData?['plan'] ?? 'free';
+          
+          await storeRepository.addStore('Store 1', event.ownerId, plan: adminPlan);
           final updatedStores = await storeRepository.getStoresByOwner(event.ownerId);
           emit(StoreLoaded(updatedStores));
         } else {
@@ -59,7 +65,7 @@ class StoreBloc extends Bloc<StoreEvent, StoreState> {
     });
     on<AddStore>((event, emit) async {
       try {
-        await storeRepository.addStore(event.name, event.ownerId);
+        await storeRepository.addStore(event.name, event.ownerId, plan: event.plan ?? 'free');
         final stores = await storeRepository.getStoresByOwner(event.ownerId);
         emit(StoreLoaded(stores));
       } catch (e) {

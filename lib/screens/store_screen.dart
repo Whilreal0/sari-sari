@@ -60,18 +60,50 @@ class _StoreScreenState extends State<StoreScreen> {
                               final result = await showDialog<String>(
                                 context: context,
                                 builder: (context) => AlertDialog(
-                                  title: const Text('Add Store'),
-                                  content: TextField(
-                                    controller: nameController,
-                                    decoration: const InputDecoration(labelText: 'Store Name'),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  title: const Text(
+                                    'Add Store',
+                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      TextField(
+                                        controller: nameController,
+                                        decoration: InputDecoration(
+                                          labelText: 'Store Name',
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                              color: Theme.of(context).colorScheme.primary,
+                                              width: 2,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(context),
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                      ),
                                       child: const Text('Cancel'),
                                     ),
                                     ElevatedButton(
                                       onPressed: () => Navigator.pop(context, nameController.text),
+                                      style: ElevatedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
                                       child: const Text('Add'),
                                     ),
                                   ],
@@ -79,7 +111,7 @@ class _StoreScreenState extends State<StoreScreen> {
                               );
                               if (result != null && result.isNotEmpty) {
                                 if (!mounted) return;
-                                bloc.add(AddStore(result, userId));
+                                bloc.add(AddStore(result, userId, plan: plan));
                                 // Wait for the bloc to update before setting the index
                                 await Future.delayed(const Duration(milliseconds: 100));
                                 if (mounted) {

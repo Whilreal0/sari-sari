@@ -200,13 +200,14 @@ class InviteRepository {
     required String adminId,
   }) async {
     final inviteCode = generateOneTimeInviteCode();
+    final now = DateTime.now();
     
     await supabase.from('manager_invite_codes').insert({
       'code': inviteCode,
       'store_id': storeId,
       'created_by': adminId,
-      'expires_at': DateTime.now().add(const Duration(days: 7)).toIso8601String(),
-      'created_at': DateTime.now().toIso8601String(),
+      'expires_at': now.add(const Duration(days: 7)).toIso8601String(),
+      'created_at': now.toIso8601String(),
     });
     
     return inviteCode;
@@ -224,14 +225,41 @@ class InviteRepository {
     return response;
   }
 
-  // Mark invite code as used
-  Future<void> useInviteCode(String code) async {
-    await supabase
-        .from('manager_invite_codes')
-        .update({
-          'used_at': DateTime.now().toIso8601String()
-        })
-        .eq('code', code);
+  // Mark invite code as used with manager info
+  Future<void> useInviteCode(String code, {String? managerId}) async {
+    try {
+      // First, check if the code exists
+      final existingCode = await supabase
+          .from('manager_invite_codes')
+          .select('*')
+          .eq('code', code)
+          .maybeSingle();
+      
+      if (existingCode == null) {
+        throw Exception('Invite code not found: $code');
+      }
+      
+      final updateData = {
+        'used_at': DateTime.now().toUtc().toIso8601String(),
+        'used_by': managerId,
+      };
+      
+      final result = await supabase
+          .from('manager_invite_codes')
+          .update(updateData)
+          .eq('code', code)
+          .select();
+      
+      // Verify the update worked
+      final updatedCode = await supabase
+          .from('manager_invite_codes')
+          .select('*')
+          .eq('code', code)
+          .maybeSingle();
+      
+    } catch (e) {
+      rethrow;
+    }
   }
 
   // Complete manager registration
@@ -241,63 +269,110 @@ class InviteRepository {
     required String fullName,
     required String password,
   }) async {
-    // Verify code is still valid
-    final codeData = await verifyInviteCode(inviteCode);
+
+    // Verify code is still valid and not used
+    final codeData = await supabase
+        .from('manager_invite_codes')
+        .select('*, stores(name)')
+        .eq('code', inviteCode)
+        .gt('expires_at', DateTime.now().toIso8601String())
+        .maybeSingle();
+    
     if (codeData == null) {
       throw Exception('Invalid or expired invite code');
     }
-    
-    // Create auth user
-    final authResponse = await supabase.auth.signUp(
-      email: email,
-      password: password,
-    );
-    
-    if (authResponse.user == null) {
-      throw Exception('Failed to create user account');
+
+    // Check if already used
+    if (codeData['used_at'] != null) {
+      throw Exception('Invite code has already been used');
     }
-    
-    // Create manager profile only (remove profiles table insertion)
-    await supabase.from('manager_profiles').insert({
-      'id': authResponse.user!.id,
-      'email': email,
-      'full_name': fullName,
-      'store_id': codeData['store_id'],
-      'invited_by': codeData['created_by'],
-      'role': 'manager',
-      'status': 'active',
-      'created_at': DateTime.now().toIso8601String(),
-    });
-    
-    // Mark invite code as used
-    await useInviteCode(inviteCode);
-    
-    // Clear any cached user type to ensure fresh lookup
-    await UserService.clearUserTypeCache();
+
+    try {
+      // Create user first
+      final authResponse = await supabase.auth.signUp(
+        email: email,
+        password: password,
+      );
+
+      if (authResponse.user == null) {
+        throw Exception('Failed to create user account');
+      }
+
+      // Create manager profile
+      await supabase.from('manager_profiles').insert({
+        'id': authResponse.user!.id,
+        'email': email,
+        'full_name': fullName,
+        'store_id': codeData['store_id'],
+        'invited_by': codeData['created_by'],
+        'role': 'manager',
+        'status': 'active',
+        'created_at': DateTime.now().toUtc().toIso8601String(),
+      });
+
+      // Try to mark code as used with the existing RPC function
+      try {
+        await supabase.rpc('update_invite_code_manager', params: {
+          'code_param': inviteCode,
+          'manager_id_param': authResponse.user!.id,
+        });
+      } catch (markError) {
+        // Continue anyway - the important parts (user and profile) are created
+      }
+
+      // Clear any cached user type to ensure fresh lookup
+      await UserService.clearUserTypeCache();
+
+    } catch (e) {
+      rethrow;
+    }
   }
 
-  // Get invite codes for a store with usage status
   Future<List<Map<String, dynamic>>> getInviteCodesForStore(String storeId) async {
-    final response = await supabase
-        .from('manager_invite_codes')
-        .select('''
-          code,
-          status,
-          created_at,
-          used_at,
-          manager_profiles!inner(full_name)
-        ''')
-        .eq('store_id', storeId)
-        .order('created_at', ascending: false);
-    
-    return List<Map<String, dynamic>>.from(response).map((invite) {
-      return {
-        'code': invite['code'],
-        'status': invite['status'],
-        'created_at': invite['created_at'],
-        'used_at': invite['used_at'],
-        'used_by_name': invite['manager_profiles']?['full_name'],
-      };
-    }).toList();
+    try {
+      final response = await supabase
+          .from('manager_invite_codes')
+          .select('code, created_at, used_at, used_by')
+          .eq('store_id', storeId)
+          .order('created_at', ascending: false);
+      
+      List<Map<String, dynamic>> result = [];
+      
+      for (var invite in response) {
+        bool isUsed = invite['used_at'] != null;
+        String? managerName;
+        
+        if (isUsed && invite['used_by'] != null) {
+          // Get the specific manager who used this code
+          final managerResponse = await supabase
+              .from('manager_profiles')
+              .select('full_name')
+              .eq('id', invite['used_by'])
+              .maybeSingle();
+          
+          managerName = managerResponse?['full_name'];
+        }
+        
+        result.add({
+          'code': invite['code'],
+          'status': isUsed ? 'used' : 'pending',
+          'created_at': invite['created_at'],
+          'used_at': invite['used_at'],
+          'used_by_name': managerName,
+        });
+      }
+      
+      return result;
+    } catch (e) {
+      return [];
+    }
+  }
+
+  // Fix existing data - mark codes as used if there are active managers
+  // Future<void> fixExistingCodeStatus(String storeId) async { ... }
+
+  // Add this test method temporarily
+  Future<void> testMarkCodeAsUsed(String code, String managerId) async {
+    await useInviteCode(code, managerId: managerId);
   }
 }

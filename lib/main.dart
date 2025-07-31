@@ -15,13 +15,11 @@ import 'screens/subscription_details_screen.dart';
 import 'package:sari_sari/bloc/profile_bloc.dart';
 import 'repository/invite_repository.dart';
 import 'screens/store_screen.dart';
+import 'screens/codes_screen.dart';
 import 'package:flutter/services.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // Disable all debug prints
-  debugPrint = (String? message, {int? wrapWidth}) {};
   
   if (!kIsWeb) {
     await dotenv.load();
@@ -124,6 +122,7 @@ class MyApp extends StatelessWidget {
                 create: (_) => ProfileBloc(inviteRepository: InviteRepository())..add(LoadProfile()),
                 child: const StoreScreen(),
               ),
+              '/codes': (context) => const CodesScreen(),
             },
             debugShowCheckedModeBanner: false,
           );

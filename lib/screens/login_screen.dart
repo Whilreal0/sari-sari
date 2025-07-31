@@ -11,6 +11,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
+  bool _isCapsLockOn = false;
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
@@ -19,6 +20,95 @@ class _LoginScreenState extends State<LoginScreen> {
     emailController.dispose();
     passwordController.dispose();
     super.dispose();
+  }
+
+  String _getCustomErrorMessage(String originalError) {
+    final error = originalError.toLowerCase();
+    
+    // Add debug print to see what error we're getting
+    print('Original error: $originalError');
+    
+    if (error.contains('network') || error.contains('connection') || error.contains('timeout')) {
+      return 'No internet connection. Please check your network and try again.';
+    } else if (error.contains('invalid login credentials') || 
+               error.contains('invalid_credentials') ||
+               error.contains('invalid credentials') ||
+               error.contains('wrong password') ||
+               error.contains('incorrect password') ||
+               error.contains('authentication failed') ||
+               (error.contains('auth') && error.contains('fail'))) {
+      return 'Incorrect email or password. Please try again.';
+    } else if (error.contains('email not confirmed') || 
+               error.contains('email_not_confirmed') ||
+               error.contains('not confirmed')) {
+      return 'Please verify your email address before logging in.';
+    } else if (error.contains('too many requests') || 
+               error.contains('rate_limit') ||
+               error.contains('rate limit')) {
+      return 'Too many login attempts. Please wait a moment and try again.';
+    } else if (error.contains('user not found') || 
+               error.contains('user_not_found') ||
+               error.contains('no user found')) {
+      return 'No account found with this email address.';
+    } else if (error.contains('invalid email') || 
+               (error.contains('email') && error.contains('invalid'))) {
+      return 'Please enter a valid email address.';
+    } else if (error.contains('account disabled') || 
+               error.contains('disabled') ||
+               error.contains('suspended')) {
+      return 'Your account has been disabled. Please contact support.';
+    } else if (error.contains('password')) {
+      return 'Incorrect password. Please try again.';
+    } else {
+      // Show the original error for debugging, then return custom message
+      print('Unhandled error type: $originalError');
+      return 'Login failed. Please check your credentials and try again.';
+    }
+  }
+
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+  }
+
+  void _onPasswordChanged(String value) {
+    // Simple caps lock detection based on character patterns
+    bool hasCaps = value.isNotEmpty && value == value.toUpperCase() && value != value.toLowerCase();
+    if (hasCaps != _isCapsLockOn) {
+      setState(() {
+        _isCapsLockOn = hasCaps;
+      });
+    }
+  }
+
+  Future<void> _handleLogin() async {
+    FocusScope.of(context).unfocus();
+    
+    final email = emailController.text.trim();
+    final password = passwordController.text;
+
+    // Validate email format
+    if (!_isValidEmail(email)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid email address.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Check password length
+    if (password.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password must be at least 6 characters long.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    context.read<auth_bloc.AuthBloc>().add(auth_bloc.LoginRequested(email, password));
   }
 
   @override
@@ -30,18 +120,18 @@ class _LoginScreenState extends State<LoginScreen> {
             const SnackBar(
               content: Text('Login successful!'),
               backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
+              duration: Duration(seconds: 1),
             ),
           );
-          Future.delayed(const Duration(seconds: 2), () {
+          // Navigate to home screen after successful login
+          Future.delayed(const Duration(seconds: 1), () {
             if (!context.mounted) return;
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
             Navigator.pushReplacementNamed(context, '/home');
           });
         } else if (state is auth_bloc.AuthFailure) {
-          String errorMsg = state.message;
+          String customErrorMsg = _getCustomErrorMessage(state.message);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(errorMsg), backgroundColor: Colors.red),
+            SnackBar(content: Text(customErrorMsg), backgroundColor: Colors.red),
           );
         }
       },
@@ -96,24 +186,39 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       obscureText: _obscurePassword,
+                      onChanged: _onPasswordChanged,
                     ),
+                    if (_isCapsLockOn)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          children: const [
+                            Icon(Icons.warning, color: Colors.orange, size: 16),
+                            SizedBox(width: 4),
+                            Text(
+                              'Caps Lock is on',
+                              style: TextStyle(color: Colors.orange, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
                     const SizedBox(height: 24),
                     SizedBox(
                       height: 48,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          FocusScope.of(context).unfocus();
-                          context.read<auth_bloc.AuthBloc>().add(auth_bloc.LoginRequested(
-                            emailController.text,
-                            passwordController.text,
-                          ));
+                      child: BlocBuilder<auth_bloc.AuthBloc, auth_bloc.AuthState>(
+                        builder: (context, state) {
+                          return ElevatedButton(
+                            onPressed: state is auth_bloc.AuthLoading ? null : _handleLogin,
+                            style: ElevatedButton.styleFrom(
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              backgroundColor: Colors.deepPurple,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: state is auth_bloc.AuthLoading
+                                ? const CircularProgressIndicator(color: Colors.white)
+                                : const Text('Login', style: TextStyle(fontSize: 16, color: Colors.white)),
+                          );
                         },
-                        style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          backgroundColor: Colors.deepPurple,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('Login', style: TextStyle(fontSize: 16, color: Colors.white)),
                       ),
                     ),
                     const SizedBox(height: 16),
