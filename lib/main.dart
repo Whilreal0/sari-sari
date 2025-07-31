@@ -9,7 +9,6 @@ import 'screens/register_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:sari_sari/bloc/auth_bloc.dart' as auth_bloc;
-import 'package:flutter/foundation.dart' show kIsWeb ;
 import 'screens/profile_screen.dart';
 import 'screens/subscription_details_screen.dart';
 import 'package:sari_sari/bloc/profile_bloc.dart';
@@ -21,15 +20,16 @@ import 'package:flutter/services.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  if (!kIsWeb) {
-    await dotenv.load();
+  // Load .env file for mobile builds
+  await dotenv.load();
+  
+  final supabaseUrl = dotenv.env['SUPABASE_URL'];
+  final supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'];
+  
+  if (supabaseUrl == null || supabaseAnonKey == null) {
+    throw Exception('Missing Supabase configuration');
   }
-  final supabaseUrl = kIsWeb
-      ? const String.fromEnvironment('SUPABASE_URL')
-      : dotenv.env['SUPABASE_URL']!;
-  final supabaseAnonKey = kIsWeb
-      ? const String.fromEnvironment('SUPABASE_ANON_KEY')
-      : dotenv.env['SUPABASE_ANON_KEY']!;
+  
   await Supabase.initialize(
     url: supabaseUrl,
     anonKey: supabaseAnonKey,

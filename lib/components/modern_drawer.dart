@@ -34,11 +34,13 @@ class _ModernDrawerState extends State<ModernDrawer> {
   Future<void> fetchFullNameAndUserType() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
-      setState(() {
-        fullName = null;
-        userType = 'guest';
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          fullName = null;
+          userType = 'guest';
+          loading = false;
+        });
+      }
       return;
     }
     
@@ -47,17 +49,21 @@ class _ModernDrawerState extends State<ModernDrawer> {
       final type = await UserService.getUserType();
       final name = await UserService.getFullName();
       
-      setState(() {
-        fullName = name;
-        userType = type;
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          fullName = name;
+          userType = type;
+          loading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        fullName = null;
-        userType = 'user';
-        loading = false;
-      });
+      if (mounted) {
+        setState(() {
+          fullName = null;
+          userType = 'user';
+          loading = false;
+        });
+      }
     }
   }
 
@@ -316,6 +322,7 @@ class _ModernDrawerState extends State<ModernDrawer> {
     );
   }
 }
+
 
 
 
